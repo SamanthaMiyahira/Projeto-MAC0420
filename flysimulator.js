@@ -41,6 +41,22 @@ const MAT_CILINDRO = {
     alfa: 50.0,
 };
 
+// Definir cores para o chão
+const MAT_CHAO = {
+    amb: vec4(0.5, 0.5, 0.5, 1.0), // Cinza escuro
+    dif: vec4(0.6, 0.6, 0.6, 1.0), // Cinza claro
+    esp: vec4(0.3, 0.3, 0.3, 1.0), // Cinza brilhante
+    alfa: 30.0,
+};
+
+// Definir cores para a parede
+const MAT_PAREDE = {
+    amb: vec4(0.1, 0.1, 0.6, 1.0), // Azul escuro
+    dif: vec4(0.2, 0.2, 0.8, 1.0), // Azul claro
+    esp: vec4(0.3, 0.3, 0.9, 1.0), // Azul claro brilhante
+    alfa: 50.0,
+};
+
 const FOVY = 60;
 const ASPECT = 1;
 const NEAR = 0.1;
@@ -142,11 +158,26 @@ function crieShaders() {
     gShader.uLuzPos = gl.getUniformLocation(gShader.program, "uLuzPos");
     gl.uniform4fv(gShader.uLuzPos, LUZ.pos);
 
+    // Uniforms para o chão
+    gShader.uCorAmbChao = gl.getUniformLocation(gShader.program, "uCorAmbienteChao");
+    gShader.uCorDifChao = gl.getUniformLocation(gShader.program, "uCorDifusaoChao");
+    gShader.uCorEspChao = gl.getUniformLocation(gShader.program, "uCorEspecularChao");
+    gShader.uAlfaEspChao = gl.getUniformLocation(gShader.program, "uAlfaEspChao");
+    gShader.uIsChao = gl.getUniformLocation(gShader.program, "uIsChao");
+
+    // Uniforms para as paredes
+    gShader.uCorAmbParede = gl.getUniformLocation(gShader.program, "uCorAmbienteParede");
+    gShader.uCorDifParede = gl.getUniformLocation(gShader.program, "uCorDifusaoParede");
+    gShader.uCorEspParede = gl.getUniformLocation(gShader.program, "uCorEspecularParede");
+    gShader.uAlfaEspParede = gl.getUniformLocation(gShader.program, "uAlfaEspParede");
+    gShader.uIsParede = gl.getUniformLocation(gShader.program, "uIsParede");
+
     // Uniforms para a mesa
     gShader.uCorAmbMesa = gl.getUniformLocation(gShader.program, "uCorAmbienteMesa");
     gShader.uCorDifMesa = gl.getUniformLocation(gShader.program, "uCorDifusaoMesa");
     gShader.uCorEspMesa = gl.getUniformLocation(gShader.program, "uCorEspecularMesa");
     gShader.uAlfaEspMesa = gl.getUniformLocation(gShader.program, "uAlfaEspMesa");
+    gShader.uIsMesa = gl.getUniformLocation(gShader.program, "uIsMesa");
 
     // Uniforms para o cilindro
     gShader.uCorAmbCilindro = gl.getUniformLocation(gShader.program, "uCorAmbienteCilindro");
@@ -169,6 +200,18 @@ function crieShaders() {
     gShader.uAlfaEspTronco = gl.getUniformLocation(gShader.program, "uAlfaEspTronco");
     gShader.uIsTronco = gl.getUniformLocation(gShader.program, "uIsTronco");
 
+    // cores do chão
+    gl.uniform4fv(gShader.uCorAmbChao, mult(LUZ.amb, MAT_CHAO.amb));
+    gl.uniform4fv(gShader.uCorDifChao, mult(LUZ.dif, MAT_CHAO.dif));
+    gl.uniform4fv(gShader.uCorEspChao, LUZ.esp);
+    gl.uniform1f(gShader.uAlfaEspChao, MAT_CHAO.alfa);
+
+    // cores das paredes
+    gl.uniform4fv(gShader.uCorAmbParede, mult(LUZ.amb, MAT_PAREDE.amb));
+    gl.uniform4fv(gShader.uCorDifParede, mult(LUZ.dif, MAT_PAREDE.dif));
+    gl.uniform4fv(gShader.uCorEspParede, LUZ.esp);
+    gl.uniform1f(gShader.uAlfaEspParede, MAT_PAREDE.alfa);
+
     // Definir cores para a mesa
     gl.uniform4fv(gShader.uCorAmbMesa, mult(LUZ.amb, MAT_MESA.amb));
     gl.uniform4fv(gShader.uCorDifMesa, mult(LUZ.dif, MAT_MESA.dif));
@@ -181,14 +224,12 @@ function crieShaders() {
     gl.uniform4fv(gShader.uCorEspCilindro, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspCilindro, MAT_CILINDRO.alfa);
 
-    
     // cores da toalha
     gl.uniform4fv(gShader.uCorAmbToalha, mult(LUZ.amb, MAT_TOALHA.amb));
     gl.uniform4fv(gShader.uCorDifToalha, mult(LUZ.dif, MAT_TOALHA.dif));
     gl.uniform4fv(gShader.uCorEspToalha, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspToalha, MAT_TOALHA.alfa);
 
-    
     // cores do tronco
     gl.uniform4fv(gShader.uCorAmbTronco, mult(LUZ.amb, MAT_TRONCO.amb));
     gl.uniform4fv(gShader.uCorDifTronco, mult(LUZ.dif, MAT_TRONCO.dif));
@@ -224,6 +265,25 @@ function desenharObjetos(){
     const alturaPernas = 0.9;
     const espessuraPernas = 0.1;
     const deslocamentoY = -1.0;
+
+    // Cria o chão
+    posicoes = [];
+    normal = [];
+    addRectangle(posicoes, normal, vec3(0, deslocamentoY, 0), vec2(10, 10));
+    np = posicoes.length;
+    objetos.push(new Chao(np, centro, posicoes, normal));
+
+    // Cria as paredes
+    posicoes = [];
+    normal = [];
+    const paredeAltura = 2;
+    const paredeDeslocamentoY = deslocamentoY + paredeAltura / 2;
+    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, -5), vec3(10, paredeAltura, 0.1)); // Parede de fundo
+    addCuboid(posicoes, normal, vec3(5, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, 10)); // Parede da direita
+    addCuboid(posicoes, normal, vec3(-5, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, 10)); // Parede da esquerda
+    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, 5), vec3(10, paredeAltura, 0.1)); // Parede da frente
+    np = posicoes.length;
+    objetos.push(new Parede(np, centro, posicoes, normal));
 
     // Cria o tampo da mesa
     addCuboid(posicoes, normal, vec3(0, alturaPernas + deslocamentoY, 0), vec3(tamanhoTampo, alturaTampo, tamanhoTampo));
@@ -488,6 +548,8 @@ class Mesa extends Objects {
         super.desenhar();
 
         // desenha mesa
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
@@ -504,6 +566,8 @@ class Toalha extends Objects {
         super.desenhar();
 
         // desenha toalha
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, true);
         gl.uniform1i(gShader.uIsTronco, false);
@@ -521,6 +585,8 @@ class Cilindro extends Objects {
         super.desenhar();
 
         // desenha cilindro
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, true);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
@@ -538,12 +604,51 @@ class Tronco extends Objects {
         super.desenhar();
 
         // desenha prato
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, true);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
+
+class Chao extends Objects {
+    constructor(np, centro, posicoes, normais, axis, theta) {
+        super(np, centro, posicoes, normais, axis, theta);
+    }
+
+    desenhar() {
+        super.desenhar();
+
+        // desenha o chão
+        gl.uniform1i(gShader.uIsChao, true);
+        gl.uniform1i(gShader.uIsParede, false);
+        gl.uniform1i(gShader.uIsCilindro, false);
+        gl.uniform1i(gShader.uIsToalha, false);
+        gl.uniform1i(gShader.uIsTronco, false);
+        gl.drawArrays(gl.TRIANGLES, 0, this.np);
+    }
+}
+
+class Parede extends Objects {
+    constructor(np, centro, posicoes, normais, axis, theta) {
+        super(np, centro, posicoes, normais, axis, theta);
+    }
+
+    desenhar() {
+        super.desenhar();
+
+        // desenha as paredes
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, true);
+        gl.uniform1i(gShader.uIsCilindro, false);
+        gl.uniform1i(gShader.uIsToalha, false);
+        gl.uniform1i(gShader.uIsTronco, false);
+        gl.drawArrays(gl.TRIANGLES, 0, this.np);
+    }
+}
+
 
 var gVertexShaderSrc = `#version 300 es
 in  vec4 aPosition;
@@ -584,18 +689,28 @@ uniform vec4 uCorEspecularToalha;
 uniform vec4 uCorAmbienteTronco;
 uniform vec4 uCorDifusaoTronco;
 uniform vec4 uCorEspecularTronco;
+uniform vec4 uCorAmbienteChao;
+uniform vec4 uCorDifusaoChao;
+uniform vec4 uCorEspecularChao;
+uniform vec4 uCorAmbienteParede;
+uniform vec4 uCorDifusaoParede;
+uniform vec4 uCorEspecularParede;
 uniform float uAlfaEspMesa;
 uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
 uniform float uAlfaEspTronco;
+uniform float uAlfaEspChao;
+uniform float uAlfaEspParede;
 uniform bool uIsCilindro;
 uniform bool uIsToalha;
 uniform bool uIsTronco;
+uniform bool uIsChao;
+uniform bool uIsParede;
 void main() {
-    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : uCorAmbienteMesa));
-    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : uCorDifusaoMesa));
-    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : uCorEspecularMesa));
-    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : uAlfaEspMesa));
+    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsParede ? uCorAmbienteParede : uCorAmbienteMesa))));
+    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsParede ? uCorDifusaoParede : uCorDifusaoMesa))));
+    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsParede ? uCorEspecularParede : uCorEspecularMesa))));
+    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsParede ? uAlfaEspParede : uAlfaEspMesa))));
 
     vec3 normalV = normalize(vNormal);
     vec3 lightV = normalize(vLight);
