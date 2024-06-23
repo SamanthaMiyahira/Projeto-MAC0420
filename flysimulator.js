@@ -1,6 +1,5 @@
 "use strict";
 
-
 var camera = {
     pos: vec3(1, 1, 1),
     at: vec3(0, 0, 0),
@@ -60,6 +59,13 @@ const MAT_PAREDE = {
     amb: vec4(0.1, 0.1, 0.6, 1.0), // Azul escuro
     dif: vec4(0.2, 0.2, 0.8, 1.0), // Azul claro
     esp: vec4(0.3, 0.3, 0.9, 1.0), // Azul claro brilhante
+    alfa: 50.0,
+};
+
+const MAT_MOSCA = {
+    amb: vec4(0.2, 0.2, 0.2, 1.0), // Cinza escuro
+    dif: vec4(0.4, 0.4, 0.4, 1.0), // Cinza
+    esp: vec4(0.8, 0.8, 0.8, 1.0), // Cinza claro brilhante
     alfa: 50.0,
 };
 
@@ -266,6 +272,13 @@ function crieShaders() {
     gShader.uAlfaEspTronco = gl.getUniformLocation(gShader.program, "uAlfaEspTronco");
     gShader.uIsTronco = gl.getUniformLocation(gShader.program, "uIsTronco");
 
+    // Uniforms para a mosca
+    gShader.uCorAmbMosca = gl.getUniformLocation(gShader.program, "uCorAmbienteMosca");
+    gShader.uCorDifMosca = gl.getUniformLocation(gShader.program, "uCorDifusaoMosca");
+    gShader.uCorEspMosca = gl.getUniformLocation(gShader.program, "uCorEspecularMosca");
+    gShader.uAlfaEspMosca = gl.getUniformLocation(gShader.program, "uAlfaEspMosca");
+    gShader.uIsMosca = gl.getUniformLocation(gShader.program, "uIsMosca");
+
     // cores do chão
     gl.uniform4fv(gShader.uCorAmbChao, mult(LUZ.amb, MAT_CHAO.amb));
     gl.uniform4fv(gShader.uCorDifChao, mult(LUZ.dif, MAT_CHAO.dif));
@@ -301,6 +314,12 @@ function crieShaders() {
     gl.uniform4fv(gShader.uCorDifTronco, mult(LUZ.dif, MAT_TRONCO.dif));
     gl.uniform4fv(gShader.uCorEspTronco, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspTronco, MAT_TRONCO.alfa);
+
+    // cores da mosca
+    gl.uniform4fv(gShader.uCorAmbMosca, mult(LUZ.amb, MAT_MOSCA.amb));
+    gl.uniform4fv(gShader.uCorDifMosca, mult(LUZ.dif, MAT_MOSCA.dif));
+    gl.uniform4fv(gShader.uCorEspMosca, LUZ.esp);
+    gl.uniform1f(gShader.uAlfaEspMosca, MAT_MOSCA.alfa);
 }
 
 function atualizarObjetos(dt) {
@@ -398,6 +417,14 @@ function desenharObjetos(){
     addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo/2 + deslocamentoY + 0.04, -0.35), 0.07, 0.1, 0.04, 36);
     np = posicoes.length;
     objetos.push(new Tronco(np, centro, posicoes, normal));
+
+    // Adiciona a mosca inicialmente à frente da câmera
+    posicoes = [];
+    normal = [];
+    addCuboid(posicoes, normal, vec3(0, 0, 0), vec3(0.1, 0.1, 0.1));
+    np = posicoes.length;
+    objetos.push(new Mosca(np, centro, posicoes, normal));
+    
 }
 
 function addCuboid(pos, nor, center, size) {
@@ -627,6 +654,7 @@ class Mesa extends Objects {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -645,6 +673,7 @@ class Toalha extends Objects {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, true);
         gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -664,6 +693,7 @@ class Cilindro extends Objects {
         gl.uniform1i(gShader.uIsCilindro, true);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -683,6 +713,7 @@ class Tronco extends Objects {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, true);
+        gl.uniform1i(gShader.uIsMosca, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -701,6 +732,7 @@ class Chao extends Objects {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -719,6 +751,33 @@ class Parede extends Objects {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
+        gl.drawArrays(gl.TRIANGLES, 0, this.np);
+    }
+}
+
+class Mosca extends Objects {
+    constructor(np, centro, posicoes, normais, axis, theta) {
+        super(np, centro, posicoes, normais, axis, theta);
+    }
+
+    atualizar(dt) {
+        // Atualize a posição da mosca para estar sempre à frente da câmera e um pouco elevada
+        let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
+        novaPosicao[1] += 0.1; // Elevar um pouco a mosca
+        this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+    }
+
+    desenhar() {
+        super.desenhar();
+
+        // desenha a mosca
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
+        gl.uniform1i(gShader.uIsCilindro, false);
+        gl.uniform1i(gShader.uIsToalha, false);
+        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, true);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -727,14 +786,17 @@ class Parede extends Objects {
 var gVertexShaderSrc = `#version 300 es
 in  vec4 aPosition;
 in  vec3 aNormal;
+
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uPerspective;
 uniform mat4 uInverseTranspose;
 uniform vec4 uLuzPos;
+
 out vec3 vNormal;
 out vec3 vLight;
 out vec3 vView;
+
 void main() {
     mat4 modelView = uView * uModel;
     gl_Position = uPerspective * modelView * aPosition;
@@ -747,53 +809,73 @@ void main() {
 
 var gFragmentShaderSrc = `#version 300 es
 precision highp float;
+
 in vec3 vNormal;
 in vec3 vLight;
 in vec3 vView;
+
 out vec4 corSaida;
+
 uniform vec4 uCorAmbienteMesa;
 uniform vec4 uCorDifusaoMesa;
 uniform vec4 uCorEspecularMesa;
+
 uniform vec4 uCorAmbienteCilindro;
 uniform vec4 uCorDifusaoCilindro;
 uniform vec4 uCorEspecularCilindro;
+
 uniform vec4 uCorAmbienteToalha;
 uniform vec4 uCorDifusaoToalha;
 uniform vec4 uCorEspecularToalha;
+
 uniform vec4 uCorAmbienteTronco;
 uniform vec4 uCorDifusaoTronco;
 uniform vec4 uCorEspecularTronco;
+
 uniform vec4 uCorAmbienteChao;
 uniform vec4 uCorDifusaoChao;
 uniform vec4 uCorEspecularChao;
+
 uniform vec4 uCorAmbienteParede;
 uniform vec4 uCorDifusaoParede;
 uniform vec4 uCorEspecularParede;
+
+uniform vec4 uCorAmbienteMosca;
+uniform vec4 uCorDifusaoMosca;
+uniform vec4 uCorEspecularMosca;
+
 uniform float uAlfaEspMesa;
 uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
 uniform float uAlfaEspTronco;
 uniform float uAlfaEspChao;
 uniform float uAlfaEspParede;
+uniform float uAlfaEspMosca;
+
 uniform bool uIsCilindro;
 uniform bool uIsToalha;
 uniform bool uIsTronco;
 uniform bool uIsChao;
 uniform bool uIsParede;
+uniform bool uIsMosca;
+
 void main() {
-    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsParede ? uCorAmbienteParede : uCorAmbienteMesa))));
-    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsParede ? uCorDifusaoParede : uCorDifusaoMesa))));
-    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsParede ? uCorEspecularParede : uCorEspecularMesa))));
-    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsParede ? uAlfaEspParede : uAlfaEspMesa))));
+    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsParede ? uCorAmbienteParede : (uIsMosca ? uCorAmbienteMosca : uCorAmbienteMesa)))));
+    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsParede ? uCorDifusaoParede : (uIsMosca ? uCorDifusaoMosca : uCorDifusaoMesa)))));
+    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsParede ? uCorEspecularParede : (uIsMosca ? uCorEspecularMosca : uCorEspecularMesa)))));
+    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsParede ? uAlfaEspParede : (uIsMosca ? uAlfaEspMosca : uAlfaEspMesa)))));
 
     vec3 normalV = normalize(vNormal);
     vec3 lightV = normalize(vLight);
     vec3 viewV = normalize(vView);
     vec3 halfV = normalize(lightV + viewV);
+
     float kd = max(0.0, dot(normalV, lightV));
-    vec4 difusao = kd * uCorDifusao;
     float ks = pow(max(0.0, dot(normalV, halfV)), uAlfaEsp);
+
+    vec4 difusao = kd * uCorDifusao;
     vec4 especular = ks * uCorEspecular;
+
     corSaida = difusao + especular + uCorAmbiente;
     corSaida.a = 1.0;
 }
