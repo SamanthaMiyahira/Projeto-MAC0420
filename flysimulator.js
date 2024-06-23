@@ -1,8 +1,14 @@
 "use strict";
 
-const eye = vec3(1, 1, 1); // Aproximar a câmera
-const at = vec3(0, 0, 0);  // Centralizar o ponto de vista
-const up = vec3(0, 1, 0);
+
+var camera = {
+    pos: vec3(1, 1, 1),
+    at: vec3(0, 0, 0),
+    up: vec3(0, 1, 0),
+    theta: vec3(0, 0, 0),
+    vTrans: 0.1,
+    dir: vec3(0, 0, 0)
+};
 
 const LUZ = {
     pos: vec4(0.0, 3.0, 0.0, 1.0),
@@ -95,27 +101,87 @@ function main() {
     gl = gCanvas.getContext('webgl2');
     if (!gl) alert("Vixe! Não achei WebGL 2.0 aqui :-(");
 
-    crieInterface();
+    // crieInterface();
     // gMesa.init();
     
-
     gl.viewport(0, 0, gCanvas.width, gCanvas.height);
     gl.clearColor(FUNDO[0], FUNDO[1], FUNDO[2], FUNDO[3]);
     gl.enable(gl.DEPTH_TEST);
 
-    document.addEventListener('keydown', handleKeyDown); // Adicionar evento de teclado
+    document.addEventListener('keydown', controlaCamera);
+
 
     crieShaders();
     desenharObjetos();
     render();
 }
 
-function handleKeyDown(event) {
-    switch (event.key) {
-        case 'a':
-            gPositionOffset = add(gPositionOffset, vec3(-0.1, 0, 0)); // Mover para a esquerda
+function controlaCamera(event) {
+    switch (event.key.toLowerCase()) {
+        case 'j': // Diminui velocidade de translação
+            camera.vTrans -= 0.05;
+            console.log("Velocidade de translação diminuída: ", camera.vTrans);
+            break;
+        case 'l': // Aumenta velocidade de translação
+            camera.vTrans += 0.05;
+            console.log("Velocidade de translação aumentada: ", camera.vTrans);
+            break;
+        case 'k': // Para a câmera
+            camera.vTrans = 0;
+            console.log("Câmera parada");
+            break;
+        case 'w': // Incrementa rotação em x 
+            camera.theta[0] += 1;
+            console.log("Rotação em X incrementada: ", camera.theta[0]);
+            break;
+        case 's': // Decrementa rotação em x
+            camera.theta[0] -= 1;
+            console.log("Rotação em X decrementada: ", camera.theta[0]);
+            break;
+        case 'a': // Incrementa rotação em y
+            camera.theta[1] += 1;
+            console.log("Rotação em Y incrementada: ", camera.theta[1]);
+            break;
+        case 'd': // Decrementa rotação em y
+            camera.theta[1] -= 1;
+            console.log("Rotação em Y decrementada: ", camera.theta[1]);
+            break;
+        case 'z': // Incrementa rotação em z 
+            camera.theta[2] += 1;
+            console.log("Rotação em Z incrementada (sentido anti-horário): ", camera.theta[2]);
+            break;
+        case 'c': // Decrementa rotação em z 
+            camera.theta[2] -= 1;
+            console.log("Rotação em Z decrementada (sentido horário): ", camera.theta[2]);
             break;
     }
+    atualizaDirecaoCamera(); 
+}
+
+function atualizaDirecaoCamera() {
+    let radThetaX = radians(camera.theta[0]);
+    let radThetaY = radians(camera.theta[1]);
+    let radThetaZ = radians(camera.theta[2]);
+
+    camera.dir = vec3(
+        -Math.sin(radThetaY) * Math.cos(radThetaX),
+        Math.sin(radThetaX),
+        -Math.cos(radThetaY) * Math.cos(radThetaX)
+    );
+
+    camera.up = vec3(
+        -Math.sin(radThetaZ),
+        Math.cos(radThetaZ),
+        0
+    );
+
+    camera.at = add(camera.pos, camera.dir);
+}
+
+function atualizaCamera(dt) {
+    let deslocamento = scale(camera.vTrans * dt, camera.dir);
+    camera.pos = add(camera.pos, deslocamento);
+    atualizaDirecaoCamera();
 }
 
 function crieInterface() {
@@ -152,7 +218,7 @@ function crieShaders() {
     gCtx.perspective = perspective(FOVY, ASPECT, NEAR, FAR);
     gl.uniformMatrix4fv(gShader.uPerspective, false, flatten(gCtx.perspective));
 
-    gCtx.view = lookAt(eye, at, up);
+    gCtx.view = lookAt(camera.pos, camera.at, camera.up);
     gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
 
     gShader.uLuzPos = gl.getUniformLocation(gShader.program, "uLuzPos");
@@ -246,9 +312,11 @@ function render() {
 
     if (!gCtx.pause) {
         let dt = 2.0;
-        // atualizaCamera(dt);
+        atualizaCamera(dt);
         atualizarObjetos(dt);
     }
+    gCtx.view = lookAt(camera.pos, camera.at, camera.up);
+    gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
 
     objetos.forEach(obj => obj.desenhar());
 
@@ -266,22 +334,28 @@ function desenharObjetos(){
     const espessuraPernas = 0.1;
     const deslocamentoY = -1.0;
 
+    // Dimensões da cozinha
+    const larguraChao = 6;
+    const profundidadeChao = 6;
+
     // Cria o chão
     posicoes = [];
     normal = [];
-    addRectangle(posicoes, normal, vec3(0, deslocamentoY, 0), vec2(10, 10));
+    addRectangle(posicoes, normal, vec3(0, deslocamentoY, 0), vec2(larguraChao, profundidadeChao));
     np = posicoes.length;
     objetos.push(new Chao(np, centro, posicoes, normal));
 
     // Cria as paredes
     posicoes = [];
     normal = [];
-    const paredeAltura = 2;
+    const paredeAltura = 4;
     const paredeDeslocamentoY = deslocamentoY + paredeAltura / 2;
-    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, -5), vec3(10, paredeAltura, 0.1)); // Parede de fundo
-    addCuboid(posicoes, normal, vec3(5, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, 10)); // Parede da direita
-    addCuboid(posicoes, normal, vec3(-5, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, 10)); // Parede da esquerda
-    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, 5), vec3(10, paredeAltura, 0.1)); // Parede da frente
+
+    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, -profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1)); // Parede de fundo
+    addCuboid(posicoes, normal, vec3(larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao)); // Parede da direita
+    addCuboid(posicoes, normal, vec3(-larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao)); // Parede da esquerda
+    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1)); // Parede da frente
+
     np = posicoes.length;
     objetos.push(new Parede(np, centro, posicoes, normal));
 
