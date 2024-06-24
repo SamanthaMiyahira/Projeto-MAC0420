@@ -9,15 +9,6 @@ var camera = {
     dir: vec3(0, 0, 0) 
 };
 
-// var camera = {
-//     pos: vec3(1, 1, 1),
-//     at: vec3(0, 0, 0),
-//     up: vec3(0, 1, 0),
-//     theta: vec3(1, 1, 1),
-//     vTrans: 0.1,
-//     dir: vec3(0, 0, 0)
-// };
-
 const LUZ = {
     pos: vec4(0.0, 3.0, 0.0, 1.0),
     amb: vec4(0.4, 0.4, 0.4, 1.0), // Aumentar a claridade da luz ambiente
@@ -63,20 +54,16 @@ const MAT_CHAO = {
     alfa: 30.0,
 };
 
-// Definir cores para a parede
-const MAT_PAREDE = {
-    amb: vec4(0.1, 0.1, 0.6, 1.0), // Azul escuro
-    dif: vec4(0.2, 0.2, 0.8, 1.0), // Azul claro
-    esp: vec4(0.3, 0.3, 0.9, 1.0), // Azul claro brilhante
-    alfa: 50.0,
-};
-
 const MAT_MOSCA = {
     amb: vec4(0.2, 0.2, 0.2, 1.0), // Cinza escuro
     dif: vec4(0.4, 0.4, 0.4, 1.0), // Cinza
     esp: vec4(0.8, 0.8, 0.8, 1.0), // Cinza claro brilhante
     alfa: 50.0,
 };
+
+// textura: coordenadas (s, t) entre 0 e 1.
+// const URL = "https://i.pinimg.com/564x/99/32/ca/9932cab1f5d1820da5bfebe9ed83fefe.jpg"
+const URL = "https://media.istockphoto.com/id/1134244656/photo/white-clean-mosaic-wall-for-background-brick-slate-stone.jpg?s=612x612&w=0&k=20&c=m2J_oHDCJrgm6M0B889DfHR5xvXq5Zk4izC8inANj8A="
 
 const FOVY = 60;
 const ASPECT = 1;
@@ -136,12 +123,12 @@ function controlaCamera(event) {
         case 'j': // Diminui velocidade de translação
             //camera.vTrans -= 0.05;
             console.log("Velocidade de translação diminuída: ", camera.vTrans);
-            atualizaCamera(0.05);
+            atualizaCamera(0.5);
             break;
         case 'l': // Aumenta velocidade de translação
             //camera.vTrans += 0.05;
             console.log("Velocidade de translação aumentada: ", camera.vTrans);
-            atualizaCamera(-0.05);
+            atualizaCamera(-0.5);
             break;
         case 'k': // Para a câmera
             camera.vTrans = 0;
@@ -251,11 +238,9 @@ function crieShaders() {
     gShader.uAlfaEspChao = gl.getUniformLocation(gShader.program, "uAlfaEspChao");
     gShader.uIsChao = gl.getUniformLocation(gShader.program, "uIsChao");
 
-    // Uniforms para as paredes
-    gShader.uCorAmbParede = gl.getUniformLocation(gShader.program, "uCorAmbienteParede");
-    gShader.uCorDifParede = gl.getUniformLocation(gShader.program, "uCorDifusaoParede");
-    gShader.uCorEspParede = gl.getUniformLocation(gShader.program, "uCorEspecularParede");
-    gShader.uAlfaEspParede = gl.getUniformLocation(gShader.program, "uAlfaEspParede");
+    // Uniforms para as paredes e textura
+    loadTexture(URL);
+    gl.uniform1i(gl.getUniformLocation(gShader.program, "uTexture"), 0);
     gShader.uIsParede = gl.getUniformLocation(gShader.program, "uIsParede");
 
     // Uniforms para a mesa
@@ -299,12 +284,6 @@ function crieShaders() {
     gl.uniform4fv(gShader.uCorEspChao, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspChao, MAT_CHAO.alfa);
 
-    // cores das paredes
-    gl.uniform4fv(gShader.uCorAmbParede, mult(LUZ.amb, MAT_PAREDE.amb));
-    gl.uniform4fv(gShader.uCorDifParede, mult(LUZ.dif, MAT_PAREDE.dif));
-    gl.uniform4fv(gShader.uCorEspParede, LUZ.esp);
-    gl.uniform1f(gShader.uAlfaEspParede, MAT_PAREDE.alfa);
-
     // Definir cores para a mesa
     gl.uniform4fv(gShader.uCorAmbMesa, mult(LUZ.amb, MAT_MESA.amb));
     gl.uniform4fv(gShader.uCorDifMesa, mult(LUZ.dif, MAT_MESA.dif));
@@ -336,6 +315,25 @@ function crieShaders() {
     gl.uniform1f(gShader.uAlfaEspMosca, MAT_MOSCA.alfa);
 }
 
+function loadTexture(url) {
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
+    var image = new Image();
+    image.src = url;
+    image.crossOrigin = "anonymous";
+    image.addEventListener('load', function () {
+        console.log("Carregou imagem", image.width, image.height);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, image.width, image.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_2D);
+    });
+
+    return image;
+}
+
 function atualizarObjetos(dt) {
     objetos.forEach(obj => obj.atualizar(dt));
 }
@@ -343,11 +341,11 @@ function atualizarObjetos(dt) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if (gCtx.pause) {
-        let dt = 1.0 / 60.0;
-        //atualizaCamera(dt);
-        //atualizarObjetos(dt);
-    }
+    // if (gCtx.pause) {
+    //     let dt = 1.0 / 60.0;
+    //     atualizaCamera(dt);
+    //     atualizarObjetos(dt);
+    // }
     gCtx.view = lookAt(camera.pos, camera.at, camera.up);
     gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
 
@@ -356,11 +354,12 @@ function render() {
     window.requestAnimationFrame(render);
 }
 
-function desenharObjetos(){
+function desenharObjetos() {
     var posicoes = [];
     var normal = [];
+    var texCoord = [];
     var np = 0;
-    var centro = vec3(0.1,0.1,0.1); // posicao global dos objetos
+    var centro = vec3(0.1, 0.1, 0.1); // posicao global dos objetos
     const tamanhoTampo = 1.0;
     const alturaTampo = 0.1;
     const alturaPernas = 0.9;
@@ -381,16 +380,17 @@ function desenharObjetos(){
     // Cria as paredes
     posicoes = [];
     normal = [];
+    texCoord = [];
     const paredeAltura = 4;
     const paredeDeslocamentoY = deslocamentoY + paredeAltura / 2;
 
-    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, -profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1)); // Parede de fundo
-    addCuboid(posicoes, normal, vec3(larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao)); // Parede da direita
-    addCuboid(posicoes, normal, vec3(-larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao)); // Parede da esquerda
-    addCuboid(posicoes, normal, vec3(0, paredeDeslocamentoY, profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1)); // Parede da frente
+    addCuboidParede(posicoes, normal, texCoord, vec3(0, paredeDeslocamentoY, -profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1), 'front'); // Parede de fundo
+    addCuboidParede(posicoes, normal, texCoord, vec3(larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao), 'right'); // Parede da direita
+    addCuboidParede(posicoes, normal, texCoord, vec3(-larguraChao / 2, paredeDeslocamentoY, 0), vec3(0.1, paredeAltura, profundidadeChao), 'left'); // Parede da esquerda
+    addCuboidParede(posicoes, normal, texCoord, vec3(0, paredeDeslocamentoY, profundidadeChao / 2), vec3(larguraChao, paredeAltura, 0.1), 'back'); // Parede da frente
 
     np = posicoes.length;
-    objetos.push(new Parede(np, centro, posicoes, normal));
+    objetos.push(new Parede(np, centro, posicoes, normal, texCoord));
 
     // Cria o tampo da mesa
     addCuboid(posicoes, normal, vec3(0, alturaPernas + deslocamentoY, 0), vec3(tamanhoTampo, alturaTampo, tamanhoTampo));
@@ -408,27 +408,27 @@ function desenharObjetos(){
     // Adiciona a toalha de mesa
     posicoes = [];
     normal = [];
-    addRectangle(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo/2 + deslocamentoY + 0.01, 0), vec2(0.23, 0.33));
-    addRectangle(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo/2 + deslocamentoY + 0.01, 0), vec2(0.23, 0.33));
-    addRectangle(posicoes, normal, vec3(0, alturaPernas + alturaTampo/2 + deslocamentoY + 0.01, 0.35), vec2(0.33, 0.23));
-    addRectangle(posicoes, normal, vec3(0, alturaPernas + alturaTampo/2 + deslocamentoY + 0.01, -0.35), vec2(0.33, 0.23));
+    addRectangle(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.01, 0), vec2(0.23, 0.33));
+    addRectangle(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.01, 0), vec2(0.23, 0.33));
+    addRectangle(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.01, 0.35), vec2(0.33, 0.23));
+    addRectangle(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.01, -0.35), vec2(0.33, 0.23));
     np = posicoes.length;
     objetos.push(new Toalha(np, centro, posicoes, normal));
 
     // Adiciona uma lata de refrigerante em cima da mesa
     posicoes = [];
     normal = [];
-    addCylinder(posicoes, normal, vec3(0.14, alturaPernas + alturaTampo/2 + deslocamentoY + 0.01, -0.06), 0.05, 0.2, 36);
+    addCylinder(posicoes, normal, vec3(0.14, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.01, -0.06), 0.05, 0.2, 36);
     np = posicoes.length;
     objetos.push(new Cilindro(np, centro, posicoes, normal));
 
     // Adiciona um prato com formato de tronco
     posicoes = [];
     normal = [];
-    addTronco(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo/2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo/2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo/2 + deslocamentoY + 0.04, 0.35), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo/2 + deslocamentoY + 0.04, -0.35), 0.07, 0.1, 0.04, 36);
+    addTronco(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
+    addTronco(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
+    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0.35), 0.07, 0.1, 0.04, 36);
+    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, -0.35), 0.07, 0.1, 0.04, 36);
     np = posicoes.length;
     objetos.push(new Tronco(np, centro, posicoes, normal));
 
@@ -438,8 +438,75 @@ function desenharObjetos(){
     addCuboid(posicoes, normal, vec3(0, 0, 0), vec3(0.1, 0.1, 0.1));
     np = posicoes.length;
     objetos.push(new Mosca(np, centro, posicoes, normal));
-    
 }
+
+function addCuboidParede(pos, nor, tex, center, size, face) {
+    const x = size[0] / 2;
+    const y = size[1] / 2;
+    const z = size[2] / 2;
+
+    const vertices = [
+        vec4(center[0] - x, center[1] - y, center[2] + z, 1.0), // 0
+        vec4(center[0] - x, center[1] + y, center[2] + z, 1.0), // 1
+        vec4(center[0] + x, center[1] + y, center[2] + z, 1.0), // 2
+        vec4(center[0] + x, center[1] - y, center[2] + z, 1.0), // 3
+        vec4(center[0] - x, center[1] - y, center[2] - z, 1.0), // 4
+        vec4(center[0] - x, center[1] + y, center[2] - z, 1.0), // 5
+        vec4(center[0] + x, center[1] + y, center[2] - z, 1.0), // 6
+        vec4(center[0] + x, center[1] - y, center[2] - z, 1.0), // 7
+    ];
+
+    const texCoords = [
+        vec2(0, 0),
+        vec2(0, 1),
+        vec2(1, 1),
+        vec2(1, 0),
+    ];
+
+    if (face === 'front') {
+        quadParede(pos, nor, tex, vertices, texCoords, 1, 0, 3, 2); // Front face
+    } else if (face === 'right') {
+        quadParede(pos, nor, tex, vertices, texCoords, 5, 4, 0, 1);
+    } else if (face === 'back') {
+        quadParede(pos, nor, tex, vertices, texCoords, 4, 5, 6, 7); // Back face
+    } else if (face === 'left') {
+        quadParede(pos, nor, tex, vertices, texCoords, 2, 3, 7, 6);
+    }
+//     quadParede(pos, nor, tex, vertices, texCoords, 1, 0, 3, 2); // Front face
+//     quadParede(pos, nor, tex, vertices, texCoords, 2, 3, 7, 6); // Right face
+//     quadParede(pos, nor, tex, vertices, texCoords, 3, 0, 4, 7); // Bottom face
+//     quadParede(pos, nor, tex, vertices, texCoords, 6, 5, 1, 2); // Top face
+//     quadParede(pos, nor, tex, vertices, texCoords, 4, 5, 6, 7); // Back face
+//     quadParede(pos, nor, tex, vertices, texCoords, 5, 4, 0, 1); // Left face
+
+}
+
+function quadParede(pos, nor, tex, vert, texCoord, a, b, c, d) {
+    var t1 = subtract(vert[b], vert[a]);
+    var t2 = subtract(vert[c], vert[b]);
+    var normal = cross(t1, t2);
+    normal = normalize(vec3(normal));
+
+    pos.push(vert[a]);
+    nor.push(normal);
+    tex.push(texCoord[0]);
+    pos.push(vert[b]);
+    nor.push(normal);
+    tex.push(texCoord[1]);
+    pos.push(vert[c]);
+    nor.push(normal);
+    tex.push(texCoord[2]);
+    pos.push(vert[a]);
+    nor.push(normal);
+    tex.push(texCoord[0]);
+    pos.push(vert[c]);
+    nor.push(normal);
+    tex.push(texCoord[2]);
+    pos.push(vert[d]);
+    nor.push(normal);
+    tex.push(texCoord[3]);
+}
+
 
 function addCuboid(pos, nor, center, size) {
     const x = size[0] / 2;
@@ -651,6 +718,10 @@ class Objects {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
         gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(aPosition);
+
+        var aTexCoord = gl.getAttribLocation(gShader.program, "aTexCoord");
+        gl.vertexAttribPointer(aTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aTexCoord);
     }
 }
 
@@ -662,7 +733,6 @@ class Mesa extends Objects {
     desenhar() {
         super.desenhar();
 
-        // desenha mesa
         gl.uniform1i(gShader.uIsChao, false);
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
@@ -672,6 +742,7 @@ class Mesa extends Objects {
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
+
 
 class Toalha extends Objects {
     constructor(np, centro, posicoes, normais, axis, theta) {
@@ -751,15 +822,64 @@ class Chao extends Objects {
     }
 }
 
-class Parede extends Objects {
-    constructor(np, centro, posicoes, normais, axis, theta) {
-        super(np, centro, posicoes, normais, axis, theta);
+class Parede {
+    constructor(np, centro, posicoes, normais, texturas, axis, theta) {
+        this.bufNormais = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(normais), gl.STATIC_DRAW);
+
+        this.bufVertices = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(posicoes), gl.STATIC_DRAW);
+        
+        this.bufTextura = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTextura);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(texturas), gl.STATIC_DRAW);
+
+        this.np = np;
+        this.centro = centro || vec3(0, 0, 0);
+        this.pos = posicoes || [];
+        this.nor = normais || [];
+        this.tex = texturas || [];
+
+        this.axis = axis || EIXO_Z_IND;
+        this.theta = theta || vec3(0, 0, 0);
+        this.rodando = false;
     }
-
+    
+    atualizar() {
+        this.theta[this.axis] += 2.0;
+    }
+    
     desenhar() {
-        super.desenhar();
+        let model = mat4();
+        model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
+        model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
+        model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
+        model = mult(model, rotate(this.theta[EIXO_Z_IND], EIXO_Z));
 
-        // desenha as paredes
+        let modelView = mult(gCtx.view, model);
+        let modelViewInv = inverse(modelView);
+        let modelViewInvTrans = transpose(modelViewInv);
+
+        gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+        gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+        var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNormal);
+
+        var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+        gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aPosition);
+        
+        var aTexCoord = gl.getAttribLocation(gShader.program, "aTexCoord");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTextura);
+        gl.vertexAttribPointer(aTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aTexCoord);
+
         gl.uniform1i(gShader.uIsChao, false);
         gl.uniform1i(gShader.uIsParede, true);
         gl.uniform1i(gShader.uIsCilindro, false);
@@ -769,6 +889,7 @@ class Parede extends Objects {
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
+
 
 class Mosca {
     constructor(np, centro, posicoes, normais, axis, theta) {
@@ -833,85 +954,35 @@ class Mosca {
     }
 }
 
-// class Mosca extends Objects {
-//     constructor(np, centro, posicoes, normais, axis, theta) {
-//         super(np, centro, posicoes, normais, axis, theta);
-//     }
-
-//     atualizar(dt) {
-//         // Atualize a posição da mosca para estar sempre à frente da câmera e um pouco elevada
-//         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
-//         novaPosicao[1] += 0.1; // Elevar um pouco a mosca
-//         this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
-//     }
-
-//     desenhar() {
-//         // super.desenhar();
-
-//         // // desenha a mosca
-//         // gl.uniform1i(gShader.uIsChao, false);
-//         // gl.uniform1i(gShader.uIsParede, false);
-//         // gl.uniform1i(gShader.uIsCilindro, false);
-//         // gl.uniform1i(gShader.uIsToalha, false);
-//         // gl.uniform1i(gShader.uIsTronco, false);
-//         // gl.uniform1i(gShader.uIsMosca, true);
-//         // gl.drawArrays(gl.TRIANGLES, 0, this.np);
-//         let model = mat4();
-//         model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
-//         model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
-//         model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
-//         model = mult(model, rotate(this.theta[EIXO_Z_IND], EIXO_Z));
-
-//         let modelView = mult(gCtx.view, model);
-//         let modelViewInv = inverse(modelView);
-//         let modelViewInvTrans = transpose(modelViewInv);
-
-//         gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
-//         gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
-
-//         var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
-//         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
-//         gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-//         gl.enableVertexAttribArray(aNormal);
-
-//         var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
-//         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
-//         gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
-//         gl.enableVertexAttribArray(aPosition);
-
-        
-//         gl.uniform1i(gShader.uIsChao, false);
-//         gl.uniform1i(gShader.uIsParede, false);
-//         gl.uniform1i(gShader.uIsCilindro, false);
-//         gl.uniform1i(gShader.uIsToalha, false);
-//         gl.uniform1i(gShader.uIsTronco, false);
-//         gl.uniform1i(gShader.uIsMosca, true);
-//         gl.drawArrays(gl.TRIANGLES, 0, this.np);
-//     }
-// }
-
-
 var gVertexShaderSrc = `#version 300 es
 in  vec4 aPosition;
 in  vec3 aNormal;
+in  vec2 aTexCoord; // Adicionado
 
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uPerspective;
 uniform mat4 uInverseTranspose;
 uniform vec4 uLuzPos;
+uniform bool uIsParede;
 
 out vec3 vNormal;
 out vec3 vLight;
 out vec3 vView;
+out vec2 vTexCoord; // Adicionado
 
 void main() {
     mat4 modelView = uView * uModel;
-    gl_Position = uPerspective * modelView * aPosition;
+    if (uIsParede) {
+        gl_Position = uPerspective * modelView * vec4(aPosition.xyz, 1.0);
+    } else {
+        gl_Position = uPerspective * modelView * aPosition;
+    }
     vNormal = mat3(uInverseTranspose) * aNormal;
     vec4 pos = modelView * aPosition;
     vLight = (uView * uLuzPos - pos).xyz;
     vView = -(pos.xyz);
+    vTexCoord = aTexCoord; // Adicionado
 }
 `;
 
@@ -921,9 +992,11 @@ precision highp float;
 in vec3 vNormal;
 in vec3 vLight;
 in vec3 vView;
+in vec2 vTexCoord; // Adicionado
 
 out vec4 corSaida;
 
+uniform sampler2D uTexture; // Adicionado
 uniform vec4 uCorAmbienteMesa;
 uniform vec4 uCorDifusaoMesa;
 uniform vec4 uCorEspecularMesa;
@@ -944,10 +1017,6 @@ uniform vec4 uCorAmbienteChao;
 uniform vec4 uCorDifusaoChao;
 uniform vec4 uCorEspecularChao;
 
-uniform vec4 uCorAmbienteParede;
-uniform vec4 uCorDifusaoParede;
-uniform vec4 uCorEspecularParede;
-
 uniform vec4 uCorAmbienteMosca;
 uniform vec4 uCorDifusaoMosca;
 uniform vec4 uCorEspecularMosca;
@@ -957,7 +1026,6 @@ uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
 uniform float uAlfaEspTronco;
 uniform float uAlfaEspChao;
-uniform float uAlfaEspParede;
 uniform float uAlfaEspMosca;
 
 uniform bool uIsCilindro;
@@ -968,10 +1036,10 @@ uniform bool uIsParede;
 uniform bool uIsMosca;
 
 void main() {
-    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsParede ? uCorAmbienteParede : (uIsMosca ? uCorAmbienteMosca : uCorAmbienteMesa)))));
-    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsParede ? uCorDifusaoParede : (uIsMosca ? uCorDifusaoMosca : uCorDifusaoMesa)))));
-    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsParede ? uCorEspecularParede : (uIsMosca ? uCorEspecularMosca : uCorEspecularMesa)))));
-    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsParede ? uAlfaEspParede : (uIsMosca ? uAlfaEspMosca : uAlfaEspMesa)))));
+    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : uCorAmbienteMesa))));
+    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : uCorDifusaoMesa))));
+    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : uCorEspecularMesa))));
+    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : uAlfaEspMesa))));
 
     vec3 normalV = normalize(vNormal);
     vec3 lightV = normalize(vLight);
@@ -984,7 +1052,12 @@ void main() {
     vec4 difusao = kd * uCorDifusao;
     vec4 especular = ks * uCorEspecular;
 
-    corSaida = difusao + especular + uCorAmbiente;
+    if (uIsParede) {
+        corSaida = texture(uTexture, vTexCoord);
+    } else {
+        corSaida = difusao + especular + uCorAmbiente;
+    }
     corSaida.a = 1.0;
 }
 `;
+
