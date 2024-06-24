@@ -4,80 +4,67 @@ var camera = {
     pos: vec3(1, 1, 1),
     at: vec3(0, 0, 0), 
     up: vec3(0, 1, 0),
-    theta: vec3(-35.3, 45, 0), //precisa mudar esse
+    theta: vec3(-35.3, 45, 0),
     vTrans: 0.0,
     dir: vec3(0, 0, -1) 
 };
 
 const LUZ = {
     pos: vec4(2.0, 20.0, 4.0, 1.0),
-    amb: vec4(0.4, 0.4, 0.4, 1.0), // Aumentar a claridade da luz ambiente
+    amb: vec4(0.4, 0.4, 0.4, 1.0), 
     dif: vec4(1.0, 1.0, 1.0, 1.0),
     esp: vec4(1.0, 1.0, 1.0, 1.0),
 };
 
 const MAT_MESA = {
     amb: vec4(0.4, 0.3, 0.2, 1.0), // Marrom escuro
-    dif: vec4(0.5, 0.4, 0.3, 1.0), // Marrom médio
-    esp: vec4(0.2, 0.1, 0.05, 1.0), // Marrom claro
+    dif: vec4(0.5, 0.4, 0.3, 1.0), 
+    esp: vec4(0.2, 0.1, 0.05, 1.0), 
     alfa: 50.0,
 };
 
 const MAT_TRONCO = {
     amb: vec4(1.0, 1.0, 1.0, 1.0), // Cinza claro
-    dif: vec4(1.0, 1.0, 1.0, 1.0), // Branco
-    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
+    dif: vec4(1.0, 1.0, 1.0, 1.0), 
+    esp: vec4(1.0, 1.0, 1.0, 1.0), 
     alfa: 50.0,
 };
 
-// Definir cores para a toalha vermelha
 const MAT_TOALHA = {
     amb: vec4(0.6, 0.1, 0.1, 1.0), // Vermelho escuro
-    dif: vec4(0.8, 0.2, 0.2, 1.0), // Vermelho
-    esp: vec4(0.9, 0.3, 0.3, 1.0), // Vermelho claro brilhante
+    dif: vec4(0.8, 0.2, 0.2, 1.0), 
+    esp: vec4(0.9, 0.3, 0.3, 1.0), 
     alfa: 50.0,
 };
 
-// Definir cores para o cilindro
 const MAT_CILINDRO = {
     amb: vec4(1.0, 1.0, 1.0, 1.0), // Cinza claro
-    dif: vec4(1.0, 1.0, 1.0, 1.0), // Branco
-    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
+    dif: vec4(1.0, 1.0, 1.0, 1.0), 
+    esp: vec4(1.0, 1.0, 1.0, 1.0), 
     alfa: 50.0,
 };
 
-// Definir cores para o chão
 const MAT_CHAO = {
     amb: vec4(0.5, 0.5, 0.5, 1.0), // Cinza escuro
-    dif: vec4(0.6, 0.6, 0.6, 1.0), // Cinza claro
-    esp: vec4(0.3, 0.3, 0.3, 1.0), // Cinza brilhante
+    dif: vec4(0.6, 0.6, 0.6, 1.0), 
+    esp: vec4(0.3, 0.3, 0.3, 1.0), 
     alfa: 30.0,
 };
 
 const MAT_MOSCA = {
     amb: vec4(0.2, 0.2, 0.2, 1.0), // Cinza escuro
-    dif: vec4(0.4, 0.4, 0.4, 1.0), // Cinza
-    esp: vec4(0.8, 0.8, 0.8, 1.0), // Cinza claro brilhante
+    dif: vec4(0.4, 0.4, 0.4, 1.0), 
+    esp: vec4(0.8, 0.8, 0.8, 1.0), 
     alfa: 50.0,
 };
 
 const MAT_ASA = {
     amb: vec4(0.8, 0.8, 0.8, 1.0), // Cinza claro
-    dif: vec4(0.9, 0.9, 0.9, 1.0), // Cinza mais claro
-    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
+    dif: vec4(0.9, 0.9, 0.9, 1.0), 
+    esp: vec4(1.0, 1.0, 1.0, 1.0), 
     alfa: 50.0,
 };
 
-const MAT_TETO = {
-    amb: vec4(0.7, 0.5, 0.3, 1.0), // Marrom claro
-    dif: vec4(0.8, 0.6, 0.4, 1.0), // Marrom médio
-    esp: vec4(0.5, 0.3, 0.2, 1.0), // Marrom escuro
-    alfa: 50.0,
-};
-
-
-// textura: coordenadas (s, t) entre 0 e 1.
-// const URL_CHAO = "https://5.imimg.com/data5/TA/PE/UC/SELLER-91916656/laminated-wooden-flooring.jpg"
 const URL_CHAO = "https://st2.depositphotos.com/4196725/6866/i/450/depositphotos_68663229-stock-photo-vintage-squared-floor-texture.jpg"
 const URL_PAREDE = "https://i.imgur.com/mwoy3A0.png"
 const FOVY = 60;
@@ -96,7 +83,6 @@ const EIXO_Z = vec3(0, 0, 1);
 var gl;
 var gCanvas;
 
-// var gMesa = new Mesa();
 var objetos = [];
 
 var gShader = {
@@ -109,7 +95,7 @@ var gCtx = {
     pause: false,
 };
 
-var gPositionOffset = vec3(0, 0, 0); // Posição global dos objetos
+var gPositionOffset = vec3(0, 0, 0); 
 
 window.onload = main;
 
@@ -217,7 +203,7 @@ function crieShaders() {
 
     // Uniforms para o chão
     loadTextureChao(URL_CHAO);
-    gl.uniform1i(gl.getUniformLocation(gShader.program, "uTextureChao"), 1); // Adicione este uniforme
+    gl.uniform1i(gl.getUniformLocation(gShader.program, "uTextureChao"), 1); 
     gShader.uIsChao = gl.getUniformLocation(gShader.program, "uIsChao");
 
     // Uniforms para as paredes e textura
@@ -347,7 +333,6 @@ function loadTextureChao(url) {
     return image;
 }
 
-
 function atualizarObjetos(dt) {
     objetos.forEach(obj => obj.atualizar(dt));
 }
@@ -373,7 +358,7 @@ function desenharObjetos() {
     var normal = [];
     var texCoord = [];
     var np = 0;
-    var centro = vec3(0.1, 0.1, 0.1); // posicao global dos objetos
+    var centro = vec3(0.1, 0.1, 0.1);
     const tamanhoTampo = 1.0;
     const alturaTampo = 0.1;
     const alturaPernas = 0.9;
@@ -407,10 +392,10 @@ function desenharObjetos() {
     np = posicoes.length;
     objetos.push(new Parede(np, centro, posicoes, normal, texCoord));
 
-    // Cria o tampo da mesa
+    // Adiciona o tampo da mesa
     addCuboid(posicoes, normal, vec3(0, alturaPernas + deslocamentoY, 0), vec3(tamanhoTampo, alturaTampo, tamanhoTampo));
 
-    // Cria as pernas da mesa
+    // Adiciona as pernas da mesa
     const offsetX = (tamanhoTampo - espessuraPernas) / 2;
     const offsetZ = (tamanhoTampo - espessuraPernas) / 2;
     addCuboid(posicoes, normal, vec3(-offsetX, alturaPernas / 2 + deslocamentoY, -offsetZ), vec3(espessuraPernas, alturaPernas, espessuraPernas));
@@ -474,8 +459,8 @@ function desenharObjetos() {
     objetos.push(new Asa(np, centroMosca, posicoes, normal, "esquerda"));
 
     // Cadeira
-    const posicaoCadeira1 = vec3(tamanhoTampo / 2 - 0.5, deslocamentoY, 0.7); // Posição ajustada ao lado da mesa
-    const rotacaoCadeira1 = vec3(0, 180, 0); // Rotação de 180 graus no eixo Y
+    const posicaoCadeira1 = vec3(tamanhoTampo / 2 - 0.5, deslocamentoY, 0.7);
+    const rotacaoCadeira1 = vec3(0, 180, 0); 
     objetos.push(criarCadeira(posicaoCadeira1, rotacaoCadeira1));
 
     // Cadeira
@@ -505,15 +490,14 @@ function desenharObjetos() {
 function criarCadeira(posicao, rotacao) {
     const tamanhoAssento = 0.5;
     const alturaAssento = 0.05;
-    const alturaTotalCadeira = 0.45; // Altura total da cadeira
-    const alturaPernasCad = alturaTotalCadeira - alturaAssento; // Altura das pernas ajustada
+    const alturaTotalCadeira = 0.45; 
+    const alturaPernasCad = alturaTotalCadeira - alturaAssento; 
     const espessuraPernasCad = 0.05;
     const alturaEncosto = 0.5;
     const espessuraEncosto = 0.05;
 
     var posicoes = [];
     var normal = [];
-    var centro = vec3(0, 0, 0); // Posição relativa da cadeira em relação à origem
 
     // Assento da cadeira
     addCuboid(posicoes, normal, vec3(0, alturaPernasCad, 0), vec3(tamanhoAssento, alturaAssento, tamanhoAssento));
@@ -550,7 +534,7 @@ function addRectangle(pos, nor, tex, center, size) {
         vec2(1, 0),
     ];
 
-    quadParede(pos, nor, tex, vertices, texCoords, 0, 1, 2, 3); // Top face
+    quadParede(pos, nor, tex, vertices, texCoords, 0, 1, 2, 3);
 }
 
 function addCuboidParede(pos, nor, tex, center, size, face) {
@@ -900,7 +884,6 @@ class Mesa extends Objects {
     }
 }
 
-
 class Toalha extends Objects {
     constructor(np, centro, posicoes, normais, axis, theta) {
         super(np, centro, posicoes, normais, axis, theta);
@@ -1094,7 +1077,7 @@ class Mosca {
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
         this.centro = vec3(novaPosicao[0], novaPosicao[1] + Math.sin(this.tempo * 2 * Math.PI) * 0.03, novaPosicao[2]);
 
-        // Atualiza a direção da mosca para que fique alinhada com a câmera
+        // Alinha a mosca com a câmera
         let dir = normalize(camera.dir);
         let yaw = Math.atan2(dir[0], -dir[2]) * 180 / Math.PI;
         this.theta[EIXO_Y_IND] = yaw;
@@ -1146,7 +1129,7 @@ class Asa extends Objects {
         super(np, centro, posicoes, normais, axis, theta);
         this.lado = lado;
         this.angulo = 0;
-        this.velocidadeBatida = 2500;
+        this.velocidadeBatida = 4000;
 
         this.tempo = 0;
     }
@@ -1156,19 +1139,19 @@ class Asa extends Objects {
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
         this.centro = vec3(novaPosicao[0], novaPosicao[1] + Math.sin(this.tempo * 2 * Math.PI) * 0.03, novaPosicao[2]);
         
-        // Atualiza a direção da asa para que fique alinhada com a câmera
+        // Alinha as asas com a câmera
         let dir = normalize(camera.dir);
         let yaw = Math.atan2(dir[0], -dir[2]) * 180 / Math.PI;
         this.theta[EIXO_Y_IND] = yaw;
         this.theta[EIXO_X_IND] = 0; 
 
-        // Atualiza o ângulo para criar o movimento de batida de asas
+        // Movimento das asas
         this.angulo += this.velocidadeBatida * dt;
         if (this.angulo > 360) {
             this.angulo -= 360;
         }
 
-        // Define a rotação da asa
+        // Rotaciona as asas
         let amplitude = 30;
         let deslocamento = Math.sin(radians(this.angulo)) * amplitude;
 
@@ -1259,7 +1242,7 @@ class Teto extends ObjetoTextura {
 var gVertexShaderSrc = `#version 300 es
 in  vec4 aPosition;
 in  vec3 aNormal;
-in  vec2 aTexCoord; // Adicionado
+in  vec2 aTexCoord;
 
 uniform mat4 uModel;
 uniform mat4 uView;
@@ -1299,7 +1282,7 @@ in vec2 vTexCoord;
 out vec4 corSaida;
 
 uniform sampler2D uTexture;
-uniform sampler2D uTextureChao; // Adicionado
+uniform sampler2D uTextureChao;
 uniform vec4 uCorAmbienteMesa;
 uniform vec4 uCorDifusaoMesa;
 uniform vec4 uCorEspecularMesa;
