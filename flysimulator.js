@@ -2,12 +2,21 @@
 
 var camera = {
     pos: vec3(1, 1, 1),
-    at: vec3(0, 0, 0),
+    at: vec3(0, 0, 0), 
     up: vec3(0, 1, 0),
-    theta: vec3(0, 0, 0),
+    theta: vec3(-35.3, 45, 0), //precisa mudar esse
     vTrans: 0.1,
-    dir: vec3(0, 0, 0)
+    dir: vec3(0, 0, -1) 
 };
+
+// var camera = {
+//     pos: vec3(1, 1, 1),
+//     at: vec3(0, 0, 0),
+//     up: vec3(0, 1, 0),
+//     theta: vec3(1, 1, 1),
+//     vTrans: 0.1,
+//     dir: vec3(0, 0, 0)
+// };
 
 const LUZ = {
     pos: vec4(0.0, 3.0, 0.0, 1.0),
@@ -165,9 +174,12 @@ function controlaCamera(event) {
 }
 
 function atualizaDirecaoCamera() {
+    console.log(camera.theta[0], ' - ', camera.theta[1], ' - ', camera.theta[2]);
     let radThetaX = radians(camera.theta[0]);
     let radThetaY = radians(camera.theta[1]);
     let radThetaZ = radians(camera.theta[2]);
+
+    console.log(radThetaX, ' - ', radThetaY, ' - ', radThetaZ);
 
     camera.dir = vec3(
         -Math.sin(radThetaY) * Math.cos(radThetaX),
@@ -330,7 +342,7 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     if (!gCtx.pause) {
-        let dt = 2.0;
+        let dt = 1.0 / 60.0;
         atualizaCamera(dt);
         atualizarObjetos(dt);
     }
@@ -769,9 +781,40 @@ class Mosca extends Objects {
     }
 
     desenhar() {
-        super.desenhar();
+        // super.desenhar();
 
-        // desenha a mosca
+        // // desenha a mosca
+        // gl.uniform1i(gShader.uIsChao, false);
+        // gl.uniform1i(gShader.uIsParede, false);
+        // gl.uniform1i(gShader.uIsCilindro, false);
+        // gl.uniform1i(gShader.uIsToalha, false);
+        // gl.uniform1i(gShader.uIsTronco, false);
+        // gl.uniform1i(gShader.uIsMosca, true);
+        // gl.drawArrays(gl.TRIANGLES, 0, this.np);
+        let model = mat4();
+        model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
+        model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
+        model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
+        model = mult(model, rotate(this.theta[EIXO_Z_IND], EIXO_Z));
+
+        let modelView = mult(gCtx.view, model);
+        let modelViewInv = inverse(modelView);
+        let modelViewInvTrans = transpose(modelViewInv);
+
+        gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+        gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+        var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNormal);
+
+        var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+        gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aPosition);
+
+        
         gl.uniform1i(gShader.uIsChao, false);
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
