@@ -5,8 +5,8 @@ var camera = {
     at: vec3(0, 0, 0), 
     up: vec3(0, 1, 0),
     theta: vec3(-35.3, 45, 0), //precisa mudar esse
-    vTrans: 0.1,
-    dir: vec3(0, 0, 0) 
+    vTrans: 0.0,
+    dir: vec3(0, 0, -1) 
 };
 
 const LUZ = {
@@ -61,6 +61,13 @@ const MAT_MOSCA = {
     alfa: 50.0,
 };
 
+const MAT_ASA = {
+    amb: vec4(0.8, 0.8, 0.8, 1.0), // Cinza claro
+    dif: vec4(0.9, 0.9, 0.9, 1.0), // Cinza mais claro
+    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
+    alfa: 50.0,
+};
+
 // textura: coordenadas (s, t) entre 0 e 1.
 // const URL = "https://i.pinimg.com/564x/99/32/ca/9932cab1f5d1820da5bfebe9ed83fefe.jpg"
 const URL = "https://media.istockphoto.com/id/1134244656/photo/white-clean-mosaic-wall-for-background-brick-slate-stone.jpg?s=612x612&w=0&k=20&c=m2J_oHDCJrgm6M0B889DfHR5xvXq5Zk4izC8inANj8A="
@@ -91,7 +98,7 @@ var gShader = {
 var gCtx = {
     view: mat4(),
     perspective: mat4(),
-    pause: true,
+    pause: false,
 };
 
 var gPositionOffset = vec3(0, 0, 0); // Posição global dos objetos
@@ -103,7 +110,7 @@ function main() {
     gl = gCanvas.getContext('webgl2');
     if (!gl) alert("Vixe! Não achei WebGL 2.0 aqui :-(");
 
-    // crieInterface();
+    crieInterface();
     // gMesa.init();
     
     gl.viewport(0, 0, gCanvas.width, gCanvas.height);
@@ -121,14 +128,12 @@ function main() {
 function controlaCamera(event) {
     switch (event.key.toLowerCase()) {
         case 'j': // Diminui velocidade de translação
-            //camera.vTrans -= 0.05;
+            camera.vTrans -= 0.05;
             console.log("Velocidade de translação diminuída: ", camera.vTrans);
-            atualizaCamera(0.5);
             break;
         case 'l': // Aumenta velocidade de translação
-            //camera.vTrans += 0.05;
+            camera.vTrans += 0.05;
             console.log("Velocidade de translação aumentada: ", camera.vTrans);
-            atualizaCamera(-0.5);
             break;
         case 'k': // Para a câmera
             camera.vTrans = 0;
@@ -278,6 +283,13 @@ function crieShaders() {
     gShader.uAlfaEspMosca = gl.getUniformLocation(gShader.program, "uAlfaEspMosca");
     gShader.uIsMosca = gl.getUniformLocation(gShader.program, "uIsMosca");
 
+    // Uniforms para a asa
+    gShader.uCorAmbAsa = gl.getUniformLocation(gShader.program, "uCorAmbienteAsa");
+    gShader.uCorDifAsa = gl.getUniformLocation(gShader.program, "uCorDifusaoAsa");
+    gShader.uCorEspAsa = gl.getUniformLocation(gShader.program, "uCorEspecularAsa");
+    gShader.uAlfaEspAsa = gl.getUniformLocation(gShader.program, "uAlfaEspAsa");
+    gShader.uIsAsa = gl.getUniformLocation(gShader.program, "uIsAsa");
+
     // cores do chão
     gl.uniform4fv(gShader.uCorAmbChao, mult(LUZ.amb, MAT_CHAO.amb));
     gl.uniform4fv(gShader.uCorDifChao, mult(LUZ.dif, MAT_CHAO.dif));
@@ -313,6 +325,12 @@ function crieShaders() {
     gl.uniform4fv(gShader.uCorDifMosca, mult(LUZ.dif, MAT_MOSCA.dif));
     gl.uniform4fv(gShader.uCorEspMosca, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspMosca, MAT_MOSCA.alfa);
+
+    // cores das asas
+    gl.uniform4fv(gShader.uCorAmbAsa, mult(LUZ.amb, MAT_ASA.amb));
+    gl.uniform4fv(gShader.uCorDifAsa, mult(LUZ.dif, MAT_ASA.dif));
+    gl.uniform4fv(gShader.uCorEspAsa, LUZ.esp);
+    gl.uniform1f(gShader.uAlfaEspAsa, MAT_ASA.alfa);
 }
 
 function loadTexture(url) {
@@ -341,11 +359,11 @@ function atualizarObjetos(dt) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // if (gCtx.pause) {
-    //     let dt = 1.0 / 60.0;
-    //     atualizaCamera(dt);
-    //     atualizarObjetos(dt);
-    // }
+    if (!gCtx.pause) {
+        let dt = 1.0 / 60.0;
+        atualizaCamera(dt);
+        atualizarObjetos(dt);
+    }
     gCtx.view = lookAt(camera.pos, camera.at, camera.up);
     gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
 
@@ -432,12 +450,30 @@ function desenharObjetos() {
     np = posicoes.length;
     objetos.push(new Tronco(np, centro, posicoes, normal));
 
-    // Adiciona a mosca inicialmente à frente da câmera
+    // Adiciona mosca
+    const escala = 0.1; // Tamanho base do corpo da mosca
     posicoes = [];
     normal = [];
-    addCuboid(posicoes, normal, vec3(0, 0, 0), vec3(0.1, 0.1, 0.1));
+    let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
+    let centroMosca = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+    
+    // Corpo da mosca
+    addSphere(posicoes, normal, vec3(0, escala * 0.6, 0), escala * 0.4, 36);
     np = posicoes.length;
-    objetos.push(new Mosca(np, centro, posicoes, normal));
+    objetos.push(new Mosca(np, centroMosca, posicoes, normal));
+
+    // Asas da mosca
+    posicoes = [];
+    normal = [];
+    addAsa(posicoes, normal, vec3(0.06, escala * 0.5, 0), escala * 0.5, escala * 0.3);
+    np = posicoes.length;
+    objetos.push(new Asa(np, centroMosca, posicoes, normal, "direita"));
+
+    posicoes = [];
+    normal = [];
+    addAsa(posicoes, normal, vec3(-0.06, escala * 0.5, 0), escala * 0.5, escala * 0.3);
+    np = posicoes.length;
+    objetos.push(new Asa(np, centroMosca, posicoes, normal, "esquerda"));
 }
 
 function addCuboidParede(pos, nor, tex, center, size, face) {
@@ -671,6 +707,72 @@ function addTronco(pos, nor, center, radiusBottom, radiusTop, height, segments) 
     }
 }
 
+function addAsa(pos, nor, center, width, height, lado) {
+    const segments = 36;
+    const angleStep = 2 * Math.PI / segments;
+    const flip = lado === "esquerda" ? 1 : -1;
+
+    for (let i = 0; i < segments; i++) {
+        const angle = i * angleStep;
+        const nextAngle = (i + 1) * angleStep;
+
+        const x0 = center[0] + width * Math.cos(angle);
+        const z0 = center[2] + flip * height * Math.sin(angle);
+        const x1 = center[0] + width * Math.cos(nextAngle);
+        const z1 = center[2] + flip * height * Math.sin(nextAngle);
+
+        pos.push(vec4(center[0], center[1], center[2], 1.0));
+        nor.push(vec3(0.0, 1.0, 0.0));
+        pos.push(vec4(x0, center[1], z0, 1.0));
+        nor.push(vec3(0.0, 1.0, 0.0));
+        pos.push(vec4(x1, center[1], z1, 1.0));
+        nor.push(vec3(0.0, 1.0, 0.0));
+    }
+}
+
+
+function addSphere(pos, nor, center, radius, segments) {
+    const angleStep = Math.PI / segments;
+    const sliceStep = 2 * Math.PI / segments;
+
+    for (let i = 0; i < segments; i++) {
+        const theta = i * angleStep;
+        const nextTheta = (i + 1) * angleStep;
+
+        for (let j = 0; j < segments; j++) {
+            const phi = j * sliceStep;
+            const nextPhi = (j + 1) * sliceStep;
+
+            const p0 = vec4(
+                center[0] + radius * Math.sin(theta) * Math.cos(phi),
+                center[1] + radius * Math.cos(theta),
+                center[2] + radius * Math.sin(theta) * Math.sin(phi),
+                1.0
+            );
+            const p1 = vec4(
+                center[0] + radius * Math.sin(nextTheta) * Math.cos(phi),
+                center[1] + radius * Math.cos(nextTheta),
+                center[2] + radius * Math.sin(nextTheta) * Math.sin(phi),
+                1.0
+            );
+            const p2 = vec4(
+                center[0] + radius * Math.sin(nextTheta) * Math.cos(nextPhi),
+                center[1] + radius * Math.cos(nextTheta),
+                center[2] + radius * Math.sin(nextTheta) * Math.sin(nextPhi),
+                1.0
+            );
+            const p3 = vec4(
+                center[0] + radius * Math.sin(theta) * Math.cos(nextPhi),
+                center[1] + radius * Math.cos(theta),
+                center[2] + radius * Math.sin(theta) * Math.sin(nextPhi),
+                1.0
+            );
+
+            quad(pos, nor, [p0, p1, p2, p3], 0, 1, 2, 3);
+        }
+    }
+}
+
 class Objects {
     constructor(np, centro, posicoes, normais, axis, theta) {
         this.bufNormais = gl.createBuffer();
@@ -692,7 +794,8 @@ class Objects {
     }
     
     atualizar() {
-        this.theta[this.axis] += 2.0;
+        //this.theta[this.axis] += 2.0;
+        console.log('atualiza objetos');
     }
     
     desenhar() {
@@ -739,6 +842,7 @@ class Mesa extends Objects {
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -759,6 +863,7 @@ class Toalha extends Objects {
         gl.uniform1i(gShader.uIsToalha, true);
         gl.uniform1i(gShader.uIsTronco, false);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -779,6 +884,7 @@ class Cilindro extends Objects {
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -799,6 +905,7 @@ class Tronco extends Objects {
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, true);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -818,6 +925,7 @@ class Chao extends Objects {
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -848,7 +956,7 @@ class Parede {
     }
     
     atualizar() {
-        this.theta[this.axis] += 2.0;
+        //this.theta[this.axis] += 2.0;
     }
     
     desenhar() {
@@ -886,10 +994,10 @@ class Parede {
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
         gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
-
 
 class Mosca {
     constructor(np, centro, posicoes, normais, axis, theta) {
@@ -912,16 +1020,81 @@ class Mosca {
     }
     
     atualizar() {
-        //this.theta[this.axis] += 2.0;
-        console.log('chamou');
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
-        novaPosicao[1] += 0.1; // Elevar um pouco a mosca
         this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
     }
     
     desenhar() {
         let model = mat4();
-        //this.centro[0] += 0.01;
+        model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
+        model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
+        model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
+        model = mult(model, rotate(this.theta[EIXO_Z_IND], EIXO_Z));
+
+        let modelView = mult(gCtx.view, model);
+        let modelViewInv = inverse(modelView);
+        let modelViewInvTrans = transpose(modelViewInv);
+
+        gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+        gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+        var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aNormal);
+
+        var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+        gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aPosition);
+
+        var aTexCoord = gl.getAttribLocation(gShader.program, "aTexCoord");
+        gl.vertexAttribPointer(aTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aTexCoord);
+        
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
+        gl.uniform1i(gShader.uIsCilindro, false);
+        gl.uniform1i(gShader.uIsToalha, false);
+        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, true);
+        gl.uniform1i(gShader.uIsAsa, false);
+        gl.drawArrays(gl.TRIANGLES, 0, this.np);
+    }
+}
+
+class Asa extends Objects {
+    constructor(np, centro, posicoes, normais, lado, axis, theta) {
+        super(np, centro, posicoes, normais, axis, theta);
+        this.lado = lado; // "esquerda" ou "direita"
+        this.angulo = 0;
+        this.velocidadeBatida = 2500; // Ajuste a velocidade conforme necessário
+    }
+
+    atualizar(dt) {
+        let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
+        this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+        
+        // Atualiza o ângulo para criar o movimento de batida de asas
+        this.angulo += this.velocidadeBatida * dt;
+        if (this.angulo > 360) {
+            this.angulo -= 360;
+        }
+
+        // Define a rotação da asa
+        let amplitude = 30; // Ajuste a amplitude conforme necessário
+        let deslocamento = Math.sin(radians(this.angulo)) * amplitude;
+
+        // Diferencia a rotação da asa direita e esquerda
+        if (this.lado === "direita") {
+            this.theta[EIXO_Z_IND] = deslocamento; // Rotação no eixo Z para batida vertical da asa direita
+        } else {
+            this.theta[EIXO_Z_IND] = -deslocamento; // Rotação no eixo Z para batida vertical da asa esquerda (oposta à direita)
+        }
+    }
+
+    desenhar() {
+        let model = mat4();
         model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
         model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
         model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
@@ -949,7 +1122,8 @@ class Mosca {
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
         gl.uniform1i(gShader.uIsTronco, false);
-        gl.uniform1i(gShader.uIsMosca, true);
+        gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, true);
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
@@ -1021,12 +1195,17 @@ uniform vec4 uCorAmbienteMosca;
 uniform vec4 uCorDifusaoMosca;
 uniform vec4 uCorEspecularMosca;
 
+uniform vec4 uCorAmbienteAsa;
+uniform vec4 uCorDifusaoAsa;
+uniform vec4 uCorEspecularAsa;
+
 uniform float uAlfaEspMesa;
 uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
 uniform float uAlfaEspTronco;
 uniform float uAlfaEspChao;
 uniform float uAlfaEspMosca;
+uniform float uAlfaEspAsa;
 
 uniform bool uIsCilindro;
 uniform bool uIsToalha;
@@ -1034,13 +1213,19 @@ uniform bool uIsTronco;
 uniform bool uIsChao;
 uniform bool uIsParede;
 uniform bool uIsMosca;
+uniform bool uIsAsa;
 
 void main() {
-    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : uCorAmbienteMesa))));
-    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : uCorDifusaoMesa))));
-    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : uCorEspecularMesa))));
-    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : uAlfaEspMesa))));
+    //vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : uCorAmbienteMesa))));
+    //vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : uCorDifusaoMesa))));
+    //vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : uCorEspecularMesa))));
+    //float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : uAlfaEspMesa))));
 
+    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : (uIsAsa ? uCorAmbienteAsa : uCorAmbienteMesa)))));
+    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : (uIsAsa ? uCorDifusaoAsa : uCorDifusaoMesa)))));
+    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : (uIsAsa ? uCorEspecularAsa : uCorEspecularMesa)))));
+    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : (uIsAsa ? uAlfaEspAsa : uAlfaEspMesa)))));
+    
     vec3 normalV = normalize(vNormal);
     vec3 lightV = normalize(vLight);
     vec3 viewV = normalize(vView);
