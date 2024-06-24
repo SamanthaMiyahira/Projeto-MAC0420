@@ -693,8 +693,6 @@ function addTronco(pos, nor, center, radiusBottom, radiusTop, height, segments) 
         nor.push(normal);
         nor.push(normal);
 
-        // Top face - Removido
-
         // Bottom face
         pos.push(vec4(center[0], yBottom, center[2], 1.0));
         pos.push(vec4(x0b, yBottom, z0b, 1.0));
@@ -795,7 +793,7 @@ class Objects {
     
     atualizar() {
         //this.theta[this.axis] += 2.0;
-        console.log('atualiza objetos');
+        //console.log('atualiza objetos');
     }
     
     desenhar() {
@@ -1017,11 +1015,20 @@ class Mosca {
         this.axis = axis || EIXO_Z_IND;
         this.theta = theta || vec3(0, 0, 0);
         this.rodando = false;
+
+        this.tempo = 0;
     }
     
-    atualizar() {
+    atualizar(dt) {
+        this.tempo += dt;
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
-        this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+        this.centro = vec3(novaPosicao[0], novaPosicao[1] + Math.sin(this.tempo * 2 * Math.PI) * 0.03, novaPosicao[2]);
+
+        // Atualiza a direção da mosca para que fique alinhada com a câmera
+        let dir = normalize(camera.dir);
+        let yaw = Math.atan2(dir[0], -dir[2]) * 180 / Math.PI;
+        this.theta[EIXO_Y_IND] = yaw;
+        this.theta[EIXO_X_IND] = 0; 
     }
     
     desenhar() {
@@ -1066,15 +1073,24 @@ class Mosca {
 class Asa extends Objects {
     constructor(np, centro, posicoes, normais, lado, axis, theta) {
         super(np, centro, posicoes, normais, axis, theta);
-        this.lado = lado; // "esquerda" ou "direita"
+        this.lado = lado;
         this.angulo = 0;
-        this.velocidadeBatida = 2500; // Ajuste a velocidade conforme necessário
+        this.velocidadeBatida = 2500;
+
+        this.tempo = 0;
     }
 
     atualizar(dt) {
+        this.tempo += dt;
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
-        this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+        this.centro = vec3(novaPosicao[0], novaPosicao[1] + Math.sin(this.tempo * 2 * Math.PI) * 0.03, novaPosicao[2]);
         
+        // Atualiza a direção da asa para que fique alinhada com a câmera
+        let dir = normalize(camera.dir);
+        let yaw = Math.atan2(dir[0], -dir[2]) * 180 / Math.PI;
+        this.theta[EIXO_Y_IND] = yaw;
+        this.theta[EIXO_X_IND] = 0; 
+
         // Atualiza o ângulo para criar o movimento de batida de asas
         this.angulo += this.velocidadeBatida * dt;
         if (this.angulo > 360) {
@@ -1082,14 +1098,14 @@ class Asa extends Objects {
         }
 
         // Define a rotação da asa
-        let amplitude = 30; // Ajuste a amplitude conforme necessário
+        let amplitude = 30;
         let deslocamento = Math.sin(radians(this.angulo)) * amplitude;
 
-        // Diferencia a rotação da asa direita e esquerda
+        // Asa direita ou esquerda
         if (this.lado === "direita") {
-            this.theta[EIXO_Z_IND] = deslocamento; // Rotação no eixo Z para batida vertical da asa direita
+            this.theta[EIXO_Z_IND] = deslocamento; 
         } else {
-            this.theta[EIXO_Z_IND] = -deslocamento; // Rotação no eixo Z para batida vertical da asa esquerda (oposta à direita)
+            this.theta[EIXO_Z_IND] = -deslocamento; 
         }
     }
 
