@@ -6,7 +6,7 @@ var camera = {
     up: vec3(0, 1, 0),
     theta: vec3(-35.3, 45, 0), //precisa mudar esse
     vTrans: 0.1,
-    dir: vec3(0, 0, -1) 
+    dir: vec3(0, 0, 0) 
 };
 
 // var camera = {
@@ -134,12 +134,14 @@ function main() {
 function controlaCamera(event) {
     switch (event.key.toLowerCase()) {
         case 'j': // Diminui velocidade de translação
-            camera.vTrans -= 0.05;
+            //camera.vTrans -= 0.05;
             console.log("Velocidade de translação diminuída: ", camera.vTrans);
+            atualizaCamera(0.05);
             break;
         case 'l': // Aumenta velocidade de translação
-            camera.vTrans += 0.05;
+            //camera.vTrans += 0.05;
             console.log("Velocidade de translação aumentada: ", camera.vTrans);
+            atualizaCamera(-0.05);
             break;
         case 'k': // Para a câmera
             camera.vTrans = 0;
@@ -341,10 +343,10 @@ function atualizarObjetos(dt) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if (!gCtx.pause) {
+    if (gCtx.pause) {
         let dt = 1.0 / 60.0;
-        atualizaCamera(dt);
-        atualizarObjetos(dt);
+        //atualizaCamera(dt);
+        //atualizarObjetos(dt);
     }
     gCtx.view = lookAt(camera.pos, camera.at, camera.up);
     gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
@@ -790,6 +792,7 @@ class Mosca {
     
     atualizar() {
         //this.theta[this.axis] += 2.0;
+        console.log('chamou');
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
         novaPosicao[1] += 0.1; // Elevar um pouco a mosca
         this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
@@ -797,6 +800,7 @@ class Mosca {
     
     desenhar() {
         let model = mat4();
+        //this.centro[0] += 0.01;
         model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
         model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
         model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
