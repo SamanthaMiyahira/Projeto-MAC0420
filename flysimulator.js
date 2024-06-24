@@ -768,29 +768,34 @@ class Parede extends Objects {
     }
 }
 
-class Mosca extends Objects {
+class Mosca {
     constructor(np, centro, posicoes, normais, axis, theta) {
-        super(np, centro, posicoes, normais, axis, theta);
-    }
+        this.bufNormais = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(normais), gl.STATIC_DRAW);
 
-    atualizar(dt) {
-        // Atualize a posição da mosca para estar sempre à frente da câmera e um pouco elevada
+        this.bufVertices = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(posicoes), gl.STATIC_DRAW);
+
+        this.np = np;
+        this.centro = centro || vec3(0, 0, 0);
+        this.pos = posicoes || [];
+        this.nor = normais || [];
+
+        this.axis = axis || EIXO_Z_IND;
+        this.theta = theta || vec3(0, 0, 0);
+        this.rodando = false;
+    }
+    
+    atualizar() {
+        //this.theta[this.axis] += 2.0;
         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
         novaPosicao[1] += 0.1; // Elevar um pouco a mosca
         this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
     }
-
+    
     desenhar() {
-        // super.desenhar();
-
-        // // desenha a mosca
-        // gl.uniform1i(gShader.uIsChao, false);
-        // gl.uniform1i(gShader.uIsParede, false);
-        // gl.uniform1i(gShader.uIsCilindro, false);
-        // gl.uniform1i(gShader.uIsToalha, false);
-        // gl.uniform1i(gShader.uIsTronco, false);
-        // gl.uniform1i(gShader.uIsMosca, true);
-        // gl.drawArrays(gl.TRIANGLES, 0, this.np);
         let model = mat4();
         model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
         model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
@@ -813,7 +818,6 @@ class Mosca extends Objects {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
         gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(aPosition);
-
         
         gl.uniform1i(gShader.uIsChao, false);
         gl.uniform1i(gShader.uIsParede, false);
@@ -824,6 +828,63 @@ class Mosca extends Objects {
         gl.drawArrays(gl.TRIANGLES, 0, this.np);
     }
 }
+
+// class Mosca extends Objects {
+//     constructor(np, centro, posicoes, normais, axis, theta) {
+//         super(np, centro, posicoes, normais, axis, theta);
+//     }
+
+//     atualizar(dt) {
+//         // Atualize a posição da mosca para estar sempre à frente da câmera e um pouco elevada
+//         let novaPosicao = add(camera.pos, scale(0.5, camera.dir));
+//         novaPosicao[1] += 0.1; // Elevar um pouco a mosca
+//         this.centro = vec3(novaPosicao[0], novaPosicao[1], novaPosicao[2]);
+//     }
+
+//     desenhar() {
+//         // super.desenhar();
+
+//         // // desenha a mosca
+//         // gl.uniform1i(gShader.uIsChao, false);
+//         // gl.uniform1i(gShader.uIsParede, false);
+//         // gl.uniform1i(gShader.uIsCilindro, false);
+//         // gl.uniform1i(gShader.uIsToalha, false);
+//         // gl.uniform1i(gShader.uIsTronco, false);
+//         // gl.uniform1i(gShader.uIsMosca, true);
+//         // gl.drawArrays(gl.TRIANGLES, 0, this.np);
+//         let model = mat4();
+//         model = mult(model, translate(this.centro[0], this.centro[1], this.centro[2]));
+//         model = mult(model, rotate(this.theta[EIXO_X_IND], EIXO_X));
+//         model = mult(model, rotate(this.theta[EIXO_Y_IND], EIXO_Y));
+//         model = mult(model, rotate(this.theta[EIXO_Z_IND], EIXO_Z));
+
+//         let modelView = mult(gCtx.view, model);
+//         let modelViewInv = inverse(modelView);
+//         let modelViewInvTrans = transpose(modelViewInv);
+
+//         gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+//         gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+//         var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+//         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+//         gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+//         gl.enableVertexAttribArray(aNormal);
+
+//         var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+//         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+//         gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+//         gl.enableVertexAttribArray(aPosition);
+
+        
+//         gl.uniform1i(gShader.uIsChao, false);
+//         gl.uniform1i(gShader.uIsParede, false);
+//         gl.uniform1i(gShader.uIsCilindro, false);
+//         gl.uniform1i(gShader.uIsToalha, false);
+//         gl.uniform1i(gShader.uIsTronco, false);
+//         gl.uniform1i(gShader.uIsMosca, true);
+//         gl.drawArrays(gl.TRIANGLES, 0, this.np);
+//     }
+// }
 
 
 var gVertexShaderSrc = `#version 300 es
