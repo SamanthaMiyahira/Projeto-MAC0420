@@ -17,21 +17,14 @@ const LUZ = {
 };
 
 const MAT_MESA = {
-    amb: vec4(0.6, 0.4, 0.3, 1.0), // Aumentar a claridade da cor ambiente
-    dif: vec4(0.6, 0.3, 0.2, 1.0),
-    esp: vec4(0.2, 0.1, 0.05, 1.0),
+    amb: vec4(0.4, 0.3, 0.2, 1.0), // Marrom escuro
+    dif: vec4(0.5, 0.4, 0.3, 1.0), // Marrom médio
+    esp: vec4(0.2, 0.1, 0.05, 1.0), // Marrom claro
     alfa: 50.0,
 };
 
 const MAT_TRONCO = {
-    amb: vec4(0.8, 0.6, 0.6, 1.0), // Cinza claro
-    dif: vec4(1.0, 1.0, 1.0, 1.0), // Branco
-    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
-    alfa: 50.0,
-};
-
-const MAT_BASE_TRONCO = {
-    amb: vec4(0.8, 0.6, 0.6, 1.0), // Cinza claro
+    amb: vec4(1.0, 1.0, 1.0, 1.0), // Cinza claro
     dif: vec4(1.0, 1.0, 1.0, 1.0), // Branco
     esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
     alfa: 50.0,
@@ -47,9 +40,9 @@ const MAT_TOALHA = {
 
 // Definir cores para o cilindro
 const MAT_CILINDRO = {
-    amb: vec4(0.1, 0.1, 0.6, 1.0), // Azul escuro
-    dif: vec4(0.2, 0.2, 0.8, 1.0), // Azul claro
-    esp: vec4(0.3, 0.3, 0.9, 1.0), // Azul claro brilhante
+    amb: vec4(1.0, 1.0, 1.0, 1.0), // Cinza claro
+    dif: vec4(1.0, 1.0, 1.0, 1.0), // Branco
+    esp: vec4(1.0, 1.0, 1.0, 1.0), // Branco brilhante
     alfa: 50.0,
 };
 
@@ -75,11 +68,18 @@ const MAT_ASA = {
     alfa: 50.0,
 };
 
+const MAT_TETO = {
+    amb: vec4(0.7, 0.5, 0.3, 1.0), // Marrom claro
+    dif: vec4(0.8, 0.6, 0.4, 1.0), // Marrom médio
+    esp: vec4(0.5, 0.3, 0.2, 1.0), // Marrom escuro
+    alfa: 50.0,
+};
+
+
 // textura: coordenadas (s, t) entre 0 e 1.
 // const URL_CHAO = "https://5.imimg.com/data5/TA/PE/UC/SELLER-91916656/laminated-wooden-flooring.jpg"
 const URL_CHAO = "https://st2.depositphotos.com/4196725/6866/i/450/depositphotos_68663229-stock-photo-vintage-squared-floor-texture.jpg"
-//const URL_PAREDE = "https://media.istockphoto.com/id/1134244656/photo/white-clean-mosaic-wall-for-background-brick-slate-stone.jpg?s=612x612&w=0&k=20&c=m2J_oHDCJrgm6M0B889DfHR5xvXq5Zk4izC8inANj8A="
-const URL_PAREDE = "https://www.ukhomeinteriors.co.uk/wp-content/uploads/2023/03/WallTexture12.webp"
+const URL_PAREDE = "https://i.imgur.com/mwoy3A0.png"
 const FOVY = 60;
 const ASPECT = 1;
 const NEAR = 0.1;
@@ -118,9 +118,6 @@ function main() {
     gl = gCanvas.getContext('webgl2');
     if (!gl) alert("Vixe! Não achei WebGL 2.0 aqui :-(");
 
-    crieInterface();
-    // gMesa.init();
-    
     gl.viewport(0, 0, gCanvas.width, gCanvas.height);
     gl.clearColor(FUNDO[0], FUNDO[1], FUNDO[2], FUNDO[3]);
     gl.enable(gl.DEPTH_TEST);
@@ -163,25 +160,14 @@ function controlaCamera(event) {
             camera.theta[1] -= 1;
             //console.log("Rotação em Y decrementada: ", camera.theta[1]);
             break;
-        case 'z': // Incrementa rotação em z 
-            camera.theta[2] += 1;
-            //console.log("Rotação em Z incrementada (sentido anti-horário): ", camera.theta[2]);
-            break;
-        case 'c': // Decrementa rotação em z 
-            camera.theta[2] -= 1;
-            //console.log("Rotação em Z decrementada (sentido horário): ", camera.theta[2]);
-            break;
     }
     atualizaDirecaoCamera(); 
 }
 
 function atualizaDirecaoCamera() {
-    //console.log(camera.theta[0], ' - ', camera.theta[1], ' - ', camera.theta[2]);
     let radThetaX = radians(camera.theta[0]);
     let radThetaY = radians(camera.theta[1]);
     let radThetaZ = radians(camera.theta[2]);
-
-    //console.log(radThetaX, ' - ', radThetaY, ' - ', radThetaZ);
 
     camera.dir = vec3(
         -Math.sin(radThetaY) * Math.cos(radThetaX),
@@ -202,28 +188,6 @@ function atualizaCamera(dt) {
     let deslocamento = scale(camera.vTrans * dt, camera.dir);
     camera.pos = add(camera.pos, deslocamento);
     atualizaDirecaoCamera();
-}
-
-function crieInterface() {
-    document.getElementById("xButton").onclick = function () {
-        objetos.forEach(obj => obj.axis = EIXO_X_IND);
-        // gMesa.axis = EIXO_X_IND;
-    };
-    document.getElementById("yButton").onclick = function () {
-        objetos.forEach(obj => obj.axis = EIXO_Y_IND);
-        // gMesa.axis = EIXO_Y_IND;
-    };
-    document.getElementById("zButton").onclick = function () {
-        objetos.forEach(obj => obj.axis = EIXO_Z_IND);
-        // gMesa.axis = EIXO_Z_IND;
-    };
-    document.getElementById("pButton").onclick = function () {
-        gCtx.pause = !gCtx.pause;
-    };
-    document.getElementById("alfaSlider").onchange = function (e) {
-        gCtx.alfaEspecular = e.target.value;
-        gl.uniform1f(gShader.uAlfaEsp, gCtx.alfaEspecular);
-    };
 }
 
 function crieShaders() {
@@ -250,7 +214,6 @@ function crieShaders() {
     gShader.uCorEspChao = gl.getUniformLocation(gShader.program, "uCorEspecularChao");
     gShader.uAlfaEspChao = gl.getUniformLocation(gShader.program, "uAlfaEspChao");
     gShader.uIsChao = gl.getUniformLocation(gShader.program, "uIsChao");
-
 
     // Uniforms para o chão
     loadTextureChao(URL_CHAO);
@@ -529,6 +492,14 @@ function desenharObjetos() {
     const posicaoCadeira4 = vec3(tamanhoTampo / 2 + 0.2, deslocamentoY, 0); 
     const rotacaoCadeira4 = vec3(0, 90, 0); 
     objetos.push(criarCadeira(posicaoCadeira4, rotacaoCadeira4));
+
+    // Adiciona o teto
+    posicoes = [];
+    normal = [];
+    texCoord = [];
+    addRectangle(posicoes, normal, texCoord, vec3(0, paredeDeslocamentoY + paredeAltura / 2, 0), vec2(larguraChao, profundidadeChao));
+    np = posicoes.length;
+    objetos.push(new Teto(np, centro, posicoes, normal, texCoord));
 }
 
 function criarCadeira(posicao, rotacao) {
@@ -610,7 +581,7 @@ function addCuboidParede(pos, nor, tex, center, size, face) {
     } else if (face === 'right') {
         quadParede(pos, nor, tex, vertices, texCoords, 5, 4, 0, 1);
     } else if (face === 'back') {
-        quadParede(pos, nor, tex, vertices, texCoords, 4, 5, 6, 7); // Back face
+        quadParede(pos, nor, tex, vertices, texCoords, 5, 4, 7, 6); // Back face
     } else if (face === 'left') {
         quadParede(pos, nor, tex, vertices, texCoords, 2, 3, 7, 6);
     }
@@ -811,7 +782,6 @@ function addAsa(pos, nor, center, width, height, lado) {
         nor.push(vec3(0.0, 1.0, 0.0));
     }
 }
-
 
 function addSphere(pos, nor, center, radius, segments) {
     const angleStep = Math.PI / segments;
@@ -1266,6 +1236,26 @@ class Cadeira extends Objects {
     }
 }
 
+class Teto extends ObjetoTextura {
+    constructor(np, centro, posicoes, normais, texturas, axis, theta) {
+        super(np, centro, posicoes, normais, texturas, axis, theta);
+    }
+
+    desenhar() {
+        super.desenhar();
+
+        gl.uniform1i(gShader.uIsChao, false);
+        gl.uniform1i(gShader.uIsParede, false);
+        gl.uniform1i(gShader.uIsCilindro, false);
+        gl.uniform1i(gShader.uIsToalha, false);
+        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsMosca, false);
+        gl.uniform1i(gShader.uIsAsa, false);
+        gl.uniform1i(gShader.uIsCadeira, false);
+        gl.drawArrays(gl.TRIANGLES, 0, this.np);
+    }
+}
+
 var gVertexShaderSrc = `#version 300 es
 in  vec4 aPosition;
 in  vec3 aNormal;
@@ -1342,6 +1332,10 @@ uniform vec4 uCorAmbienteCadeira;
 uniform vec4 uCorDifusaoCadeira;
 uniform vec4 uCorEspecularCadeira;
 
+uniform vec4 uCorAmbienteTeto;
+uniform vec4 uCorDifusaoTeto;
+uniform vec4 uCorEspecularTeto;
+
 uniform float uAlfaEspMesa;
 uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
@@ -1350,6 +1344,7 @@ uniform float uAlfaEspChao;
 uniform float uAlfaEspMosca;
 uniform float uAlfaEspAsa;
 uniform float uAlfaEspCadeira;
+uniform float uAlfaEspTeto;
 
 uniform bool uIsCilindro;
 uniform bool uIsToalha;
@@ -1359,6 +1354,7 @@ uniform bool uIsParede;
 uniform bool uIsMosca;
 uniform bool uIsAsa;
 uniform bool uIsCadeira;
+uniform bool uIsTeto;
 
 void main() {
     vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : (uIsAsa ? uCorAmbienteAsa : (uIsCadeira ? uCorAmbienteCadeira : uCorAmbienteMesa))))));
