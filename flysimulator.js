@@ -8,7 +8,7 @@ var camera = {
     vTrans: 0.0,
     dir: vec3(0, 0, -1) 
 };
-//2 20 4
+
 const LUZ = {
     pos: vec4(2.0, 15.0, 2.0, 1.0),
     amb: vec4(0.4, 0.4, 0.4, 1.0), 
