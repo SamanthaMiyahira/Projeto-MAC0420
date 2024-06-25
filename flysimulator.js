@@ -23,7 +23,7 @@ const MAT_MESA = {
     alfa: 50.0,
 };
 
-const MAT_TRONCO = {
+const MAT_PRATO = {
     amb: vec4(1.0, 1.0, 1.0, 1.0), // Cinza claro
     dif: vec4(1.0, 1.0, 1.0, 1.0), 
     esp: vec4(1.0, 1.0, 1.0, 1.0), 
@@ -232,12 +232,12 @@ function crieShaders() {
     gShader.uAlfaEspToalha = gl.getUniformLocation(gShader.program, "uAlfaEspToalha");
     gShader.uIsToalha = gl.getUniformLocation(gShader.program, "uIsToalha");
 
-    // Uniforms para o prato (tronco)
-    gShader.uCorAmbTronco = gl.getUniformLocation(gShader.program, "uCorAmbienteTronco");
-    gShader.uCorDifTronco = gl.getUniformLocation(gShader.program, "uCorDifusaoTronco");
-    gShader.uCorEspTronco = gl.getUniformLocation(gShader.program, "uCorEspecularTronco");
-    gShader.uAlfaEspTronco = gl.getUniformLocation(gShader.program, "uAlfaEspTronco");
-    gShader.uIsTronco = gl.getUniformLocation(gShader.program, "uIsTronco");
+    // Uniforms para o prato (Prato)
+    gShader.uCorAmbPrato = gl.getUniformLocation(gShader.program, "uCorAmbientePrato");
+    gShader.uCorDifPrato = gl.getUniformLocation(gShader.program, "uCorDifusaoPrato");
+    gShader.uCorEspPrato = gl.getUniformLocation(gShader.program, "uCorEspecularPrato");
+    gShader.uAlfaEspPrato = gl.getUniformLocation(gShader.program, "uAlfaEspPrato");
+    gShader.uIsPrato = gl.getUniformLocation(gShader.program, "uIsPrato");
 
     // Uniforms para a mosca
     gShader.uCorAmbMosca = gl.getUniformLocation(gShader.program, "uCorAmbienteMosca");
@@ -277,11 +277,11 @@ function crieShaders() {
     gl.uniform4fv(gShader.uCorEspToalha, LUZ.esp);
     gl.uniform1f(gShader.uAlfaEspToalha, MAT_TOALHA.alfa);
 
-    // cores do tronco
-    gl.uniform4fv(gShader.uCorAmbTronco, mult(LUZ.amb, MAT_TRONCO.amb));
-    gl.uniform4fv(gShader.uCorDifTronco, mult(LUZ.dif, MAT_TRONCO.dif));
-    gl.uniform4fv(gShader.uCorEspTronco, LUZ.esp);
-    gl.uniform1f(gShader.uAlfaEspTronco, MAT_TRONCO.alfa);
+    // cores do Prato
+    gl.uniform4fv(gShader.uCorAmbPrato, mult(LUZ.amb, MAT_PRATO.amb));
+    gl.uniform4fv(gShader.uCorDifPrato, mult(LUZ.dif, MAT_PRATO.dif));
+    gl.uniform4fv(gShader.uCorEspPrato, LUZ.esp);
+    gl.uniform1f(gShader.uAlfaEspPrato, MAT_PRATO.alfa);
 
     // cores da mosca
     gl.uniform4fv(gShader.uCorAmbMosca, mult(LUZ.amb, MAT_MOSCA.amb));
@@ -423,15 +423,15 @@ function desenharObjetos() {
     np = posicoes.length;
     objetos.push(new Cilindro(np, centro, posicoes, normal));
 
-    // Adiciona um prato com formato de tronco
+    // Adiciona um prato
     posicoes = [];
     normal = [];
-    addTronco(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0.35), 0.07, 0.1, 0.04, 36);
-    addTronco(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, -0.35), 0.07, 0.1, 0.04, 36);
+    addPrato(posicoes, normal, vec3(0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
+    addPrato(posicoes, normal, vec3(-0.35, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0), 0.07, 0.1, 0.04, 36);
+    addPrato(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, 0.35), 0.07, 0.1, 0.04, 36);
+    addPrato(posicoes, normal, vec3(0, alturaPernas + alturaTampo / 2 + deslocamentoY + 0.04, -0.35), 0.07, 0.1, 0.04, 36);
     np = posicoes.length;
-    objetos.push(new Tronco(np, centro, posicoes, normal));
+    objetos.push(new Prato(np, centro, posicoes, normal));
 
     // Adiciona mosca
     const escala = 0.1; // Tamanho base do corpo da mosca
@@ -695,7 +695,7 @@ function addCylinder(pos, nor, center, radius, height, segments) {
     }
 };
 
-function addTronco(pos, nor, center, radiusBottom, radiusTop, height, segments) {
+function addPrato(pos, nor, center, radiusBottom, radiusTop, height, segments) {
     const angleStep = 2 * Math.PI / segments;
 
     for (let i = 0; i < segments; i++) {
@@ -830,7 +830,6 @@ class Objects {
     }
     
     atualizar() {
-        //this.theta[this.axis] += 2.0;
         //console.log('atualiza objetos');
     }
     
@@ -876,7 +875,7 @@ class Mesa extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -897,7 +896,7 @@ class Toalha extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, true);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -919,7 +918,7 @@ class Cilindro extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, true);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -928,7 +927,7 @@ class Cilindro extends Objects {
 }
 
 //prato
-class Tronco extends Objects {
+class Prato extends Objects {
     constructor(np, centro, posicoes, normais, axis, theta) {
         super(np, centro, posicoes, normais, axis, theta);
     }
@@ -941,7 +940,7 @@ class Tronco extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, true);
+        gl.uniform1i(gShader.uIsPrato, true);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -975,7 +974,7 @@ class ObjetoTextura {
     }
     
     atualizar() {
-        //this.theta[this.axis] += 2.0;
+        //console.log('atualiza objetos');
     }
     
     desenhar() {
@@ -1021,7 +1020,7 @@ class Parede extends ObjetoTextura {
         gl.uniform1i(gShader.uIsParede, true);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -1042,7 +1041,7 @@ class Chao extends ObjetoTextura {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -1116,7 +1115,7 @@ class Mosca {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, true);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -1191,7 +1190,7 @@ class Asa extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, true);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -1211,7 +1210,7 @@ class Cadeira extends Objects {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, true);
@@ -1231,7 +1230,7 @@ class Teto extends ObjetoTextura {
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, false);
         gl.uniform1i(gShader.uIsToalha, false);
-        gl.uniform1i(gShader.uIsTronco, false);
+        gl.uniform1i(gShader.uIsPrato, false);
         gl.uniform1i(gShader.uIsMosca, false);
         gl.uniform1i(gShader.uIsAsa, false);
         gl.uniform1i(gShader.uIsCadeira, false);
@@ -1295,9 +1294,9 @@ uniform vec4 uCorAmbienteToalha;
 uniform vec4 uCorDifusaoToalha;
 uniform vec4 uCorEspecularToalha;
 
-uniform vec4 uCorAmbienteTronco;
-uniform vec4 uCorDifusaoTronco;
-uniform vec4 uCorEspecularTronco;
+uniform vec4 uCorAmbientePrato;
+uniform vec4 uCorDifusaoPrato;
+uniform vec4 uCorEspecularPrato;
 
 uniform vec4 uCorAmbienteChao;
 uniform vec4 uCorDifusaoChao;
@@ -1322,7 +1321,7 @@ uniform vec4 uCorEspecularTeto;
 uniform float uAlfaEspMesa;
 uniform float uAlfaEspCilindro;
 uniform float uAlfaEspToalha;
-uniform float uAlfaEspTronco;
+uniform float uAlfaEspPrato;
 uniform float uAlfaEspChao;
 uniform float uAlfaEspMosca;
 uniform float uAlfaEspAsa;
@@ -1331,7 +1330,7 @@ uniform float uAlfaEspTeto;
 
 uniform bool uIsCilindro;
 uniform bool uIsToalha;
-uniform bool uIsTronco;
+uniform bool uIsPrato;
 uniform bool uIsChao;
 uniform bool uIsParede;
 uniform bool uIsMosca;
@@ -1340,10 +1339,10 @@ uniform bool uIsCadeira;
 uniform bool uIsTeto;
 
 void main() {
-    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsTronco ? uCorAmbienteTronco : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : (uIsAsa ? uCorAmbienteAsa : (uIsCadeira ? uCorAmbienteCadeira : uCorAmbienteMesa))))));
-    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsTronco ? uCorDifusaoTronco : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : (uIsAsa ? uCorDifusaoAsa : (uIsCadeira ? uCorDifusaoCadeira : uCorDifusaoMesa))))));
-    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsTronco ? uCorEspecularTronco : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : (uIsAsa ? uCorEspecularAsa : (uIsCadeira ? uCorEspecularCadeira : uCorEspecularMesa))))));
-    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsTronco ? uAlfaEspTronco : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : (uIsAsa ? uAlfaEspAsa : (uIsCadeira ? uAlfaEspCadeira : uAlfaEspMesa))))));
+    vec4 uCorAmbiente = uIsCilindro ? uCorAmbienteCilindro : (uIsToalha ? uCorAmbienteToalha : (uIsPrato ? uCorAmbientePrato : (uIsChao ? uCorAmbienteChao : (uIsMosca ? uCorAmbienteMosca : (uIsAsa ? uCorAmbienteAsa : (uIsCadeira ? uCorAmbienteCadeira : uCorAmbienteMesa))))));
+    vec4 uCorDifusao = uIsCilindro ? uCorDifusaoCilindro : (uIsToalha ? uCorDifusaoToalha : (uIsPrato ? uCorDifusaoPrato : (uIsChao ? uCorDifusaoChao : (uIsMosca ? uCorDifusaoMosca : (uIsAsa ? uCorDifusaoAsa : (uIsCadeira ? uCorDifusaoCadeira : uCorDifusaoMesa))))));
+    vec4 uCorEspecular = uIsCilindro ? uCorEspecularCilindro : (uIsToalha ? uCorEspecularToalha : (uIsPrato ? uCorEspecularPrato : (uIsChao ? uCorEspecularChao : (uIsMosca ? uCorEspecularMosca : (uIsAsa ? uCorEspecularAsa : (uIsCadeira ? uCorEspecularCadeira : uCorEspecularMesa))))));
+    float uAlfaEsp = uIsCilindro ? uAlfaEspCilindro : (uIsToalha ? uAlfaEspToalha : (uIsPrato ? uAlfaEspPrato : (uIsChao ? uAlfaEspChao : (uIsMosca ? uAlfaEspMosca : (uIsAsa ? uAlfaEspAsa : (uIsCadeira ? uAlfaEspCadeira : uAlfaEspMesa))))));
 
     vec3 normalV = normalize(vNormal);
     vec3 lightV = normalize(vLight);
