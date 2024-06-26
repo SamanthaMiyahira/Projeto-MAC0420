@@ -913,7 +913,7 @@ class Cilindro extends Objects {
     desenhar() {
         super.desenhar();
 
-        // desenha cilindro
+        // desenha  cilindro
         gl.uniform1i(gShader.uIsChao, false);
         gl.uniform1i(gShader.uIsParede, false);
         gl.uniform1i(gShader.uIsCilindro, true);
